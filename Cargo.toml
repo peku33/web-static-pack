@@ -7,3 +7,8 @@ edition = "2018"
 description = "Embed static resources (GUI, assets, images, styles, html) in executable. Serve them from web application with ease."
 
 [dependencies]
+failure = "0.1.6"
+mime_guess = "2.0.1"
+walkdir = "2.2.9"
+itertools = "0.8.2"
+clap = "2.33.0"
