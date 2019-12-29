@@ -31,7 +31,7 @@ async fn service(request: Request<Body>) -> Result<Response<StaticBody>, Infalli
 }
 
 async fn main_result() -> Result<(), Error> {
-    let address = SocketAddr::from(([127, 0, 0, 1], 8080));
+    let address = SocketAddr::from(([0, 0, 0, 0], 8080));
     let server = Server::bind(&address).serve(make_service_fn(|_connection| async {
         Ok::<_, Infallible>(service_fn(service))
     }));

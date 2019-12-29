@@ -12,6 +12,7 @@ pub struct FileDescriptor {
     content_type: &'static str,
     etag: &'static str,
     content: &'static [u8],
+    content_gzip: Option<&'static [u8]>,
 }
 impl FileDescriptor {
     /// Returns HTTP Content-Type.
@@ -27,6 +28,11 @@ impl FileDescriptor {
     /// Returns original file content.
     pub fn content(&self) -> &'static [u8] {
         self.content
+    }
+
+    /// Returns gzipped file content (if available)
+    pub fn content_gzip(&self) -> Option<&'static [u8]> {
+        self.content_gzip
     }
 }
 
@@ -102,12 +108,19 @@ impl Loader {
             let content_type = unsafe { str::from_utf8_unchecked(Self::read_u8(&mut rest)?) };
             let etag = unsafe { str::from_utf8_unchecked(Self::read_u8(&mut rest)?) };
             let content = Self::read_u32(&mut rest)?;
+            let content_gzip = Self::read_u32(&mut rest)?;
+            let content_gzip = if content_gzip.len() > 0 {
+                Some(content_gzip)
+            } else {
+                None
+            };
 
             // Build FileDescriptor.
             let file_descriptor = FileDescriptor {
                 content_type,
                 etag,
-                content: content,
+                content,
+                content_gzip,
             };
 
             // Push to collection.

@@ -127,16 +127,44 @@ impl<'l> Responder<'l> {
             }
         };
 
+        // Check accepted encodings
+        let mut accepted_encoding_gzip = false;
+        if let Some(accept_encoding) = request.headers().get(http::header::ACCEPT_ENCODING) {
+            let accept_encoding = match accept_encoding.to_str() {
+                Ok(accept_encoding) => accept_encoding,
+                Err(_) => {
+                    return hyper::Response::builder()
+                        .status(http::StatusCode::BAD_REQUEST)
+                        .body(StaticBody::default())
+                        .unwrap();
+                }
+            };
+
+            accept_encoding
+                .split(", ")
+                .for_each(|accept_encoding| match accept_encoding {
+                    "gzip" => {
+                        accepted_encoding_gzip = true;
+                    }
+                    _ => {}
+                });
+        }
+
+        // Select data based on accepted encoding
+        // (chunk, content_encoding)
+        let chunk_encoding = if accepted_encoding_gzip && file_descriptor.content_gzip().is_some() {
+            (file_descriptor.content_gzip().unwrap(), "gzip")
+        } else {
+            (file_descriptor.content(), "identity")
+        };
+
         // Provide response.
-        // TODO: Support content compression.
         let response = hyper::Response::builder()
             .header(http::header::CONTENT_TYPE, file_descriptor.content_type())
-            .header(
-                http::header::CONTENT_LENGTH,
-                file_descriptor.content().len(),
-            )
+            .header(http::header::CONTENT_LENGTH, chunk_encoding.0.len())
+            .header(http::header::CONTENT_ENCODING, chunk_encoding.1)
             .header(http::header::ETAG, file_descriptor.etag())
-            .body(StaticBody::new(file_descriptor.content()))
+            .body(StaticBody::new(chunk_encoding.0))
             .unwrap();
 
         response
