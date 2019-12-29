@@ -1,2 +1,4 @@
 /target
 **/*.rs.bk
+
+examples/docs/docs.pack

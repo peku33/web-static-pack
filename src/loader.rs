@@ -1,149 +1,127 @@
-//! Main loader module
-//! This is the part you should include in you target project if you want to read packs directly
-//! After creating a pack with cli packer tool, include this into your program with `include_bytes` macro. Then pass it to Loader::new()
-//! Files may be retrieved using `get()` method
+//! Main loader module.
+//! This is the part you should include in you target project if you want to read packs directly.
+//! After creating a pack with cli packer tool, include this into your program with `include_bytes` macro. Then pass it to `Loader::new()`.
+//! Files may be retrieved using `get()` method.
 
-use failure::{format_err, Error};
+use failure::{err_msg, format_err, Error};
 use std::collections::HashMap;
 use std::str;
 
 /// File descriptor, retrieved from loader.
 pub struct FileDescriptor {
     mime: &'static str,
+    etag: &'static str,
     content: &'static [u8],
 }
 impl FileDescriptor {
-    /// Returns HTTP mime type, to be set in Content-Type
+    /// Returns HTTP mime type, to be set in Content-Type.
     pub fn mime(&self) -> &'static str {
         self.mime
     }
 
-    // Returns original file content
+    /// Returns quoted http ETag precalculated for this file.
+    pub fn etag(&self) -> &'static str {
+        self.etag
+    }
+
+    /// Returns original file content.
     pub fn content(&self) -> &'static [u8] {
         self.content
     }
 }
 
-/// Main loader. Create using `::new()` providing reference to result of `include_bytes`
-/// Call `get()` to access files
+/// Main loader. Create using `::new()` providing reference to result of `include_bytes`.
+/// Call `get()` to access files.
 pub struct Loader {
     files: HashMap<&'static str, FileDescriptor>,
 }
 impl Loader {
+    fn read_u8(rest: &mut &'static [u8]) -> Result<&'static [u8], Error> {
+        if rest.len() < 1 {
+            return Err(err_msg("Premature length termination"));
+        }
+        let length = u8::from_ne_bytes(unsafe { [*rest.get_unchecked(0)] }) as usize;
+
+        if rest.len() - 1 < length {
+            return Err(err_msg("Premature data termination"));
+        }
+        let data = &rest[1..(1 + length)];
+
+        *rest = &rest[1 + length..];
+
+        Ok(data)
+    }
+    fn read_u16(rest: &mut &'static [u8]) -> Result<&'static [u8], Error> {
+        if rest.len() < 2 {
+            return Err(err_msg("Premature length termination"));
+        }
+        let length = u16::from_ne_bytes(unsafe { [*rest.get_unchecked(0), *rest.get_unchecked(1)] })
+            as usize;
+
+        if rest.len() - 2 < length {
+            return Err(err_msg("Premature data termination"));
+        }
+        let data = &rest[2..(2 + length)];
+
+        *rest = &rest[2 + length..];
+
+        Ok(data)
+    }
+    fn read_u32(rest: &mut &'static [u8]) -> Result<&'static [u8], Error> {
+        if rest.len() < 4 {
+            return Err(err_msg("Premature length termination"));
+        }
+        let length = u32::from_ne_bytes(unsafe {
+            [
+                *rest.get_unchecked(0),
+                *rest.get_unchecked(1),
+                *rest.get_unchecked(2),
+                *rest.get_unchecked(3),
+            ]
+        }) as usize;
+
+        if rest.len() - 4 < length {
+            return Err(err_msg("Premature data termination"));
+        }
+        let data = &rest[4..(4 + length)];
+
+        *rest = &rest[4 + length..];
+
+        Ok(data)
+    }
+
+    /// Creates a loader.
+    /// Pass result of `std::include_bytes` macro here.
+    /// Create pack (for inclusion) with `examples/packer`.
     pub fn new(included_bytes: &'static [u8]) -> Result<Self, Error> {
+        let mut rest = included_bytes;
         let mut files = HashMap::<&'static str, FileDescriptor>::new();
-        let mut included_bytes_iterator = 0usize;
-        loop {
-            // Exit condition, everything read
-            if included_bytes_iterator == included_bytes.len() {
-                break;
-            }
+        while rest.len() > 0 {
+            // Extract.
+            let path = unsafe { str::from_utf8_unchecked(Self::read_u16(&mut rest)?) };
+            let mime = unsafe { str::from_utf8_unchecked(Self::read_u8(&mut rest)?) };
+            let etag = unsafe { str::from_utf8_unchecked(Self::read_u8(&mut rest)?) };
+            let content = Self::read_u32(&mut rest)?;
 
-            // path
-            // path_bytes_length
-            if included_bytes_iterator + 2 > included_bytes.len() {
-                return Err(format_err!(
-                    "Premature input termination. path_bytes_length phase. Position: {}",
-                    included_bytes_iterator
-                ));
-            }
-            let path_bytes_length = u16::from_ne_bytes(unsafe {
-                [
-                    *included_bytes.get_unchecked(included_bytes_iterator + 0),
-                    *included_bytes.get_unchecked(included_bytes_iterator + 1),
-                ]
-            });
-            let path_bytes_length = path_bytes_length as usize;
-            included_bytes_iterator += 2;
+            // Build FileDescriptor.
+            let file_descriptor = FileDescriptor {
+                mime,
+                etag,
+                content: content,
+            };
 
-            // path_bytes
-            if included_bytes_iterator + path_bytes_length > included_bytes.len() {
-                return Err(format_err!(
-                    "Premature input termination. path_bytes phase. Position: {}",
-                    included_bytes_iterator
-                ));
-            }
-            // TODO: Make this unchecked for speed?
-            let path_bytes = &included_bytes
-                [included_bytes_iterator..included_bytes_iterator + path_bytes_length];
-            let path = unsafe { str::from_utf8_unchecked(path_bytes) };
-            included_bytes_iterator += path_bytes_length;
-
-            // mime
-            // mime_bytes_length
-            if included_bytes_iterator + 1 > included_bytes.len() {
-                return Err(format_err!(
-                    "Premature input termination. mime_bytes_length phase. Position: {}",
-                    included_bytes_iterator
-                ));
-            }
-            let mime_bytes_length = u8::from_ne_bytes(unsafe {
-                [*included_bytes.get_unchecked(included_bytes_iterator + 0)]
-            });
-            let mime_bytes_length = mime_bytes_length as usize;
-            included_bytes_iterator += 1;
-
-            // mime_bytes
-            if included_bytes_iterator + mime_bytes_length > included_bytes.len() {
-                return Err(format_err!(
-                    "Premature input termination. mime_bytes phase. Position: {}",
-                    included_bytes_iterator
-                ));
-            }
-            // TODO: Make this unchecked for speed?
-            let mime_bytes = &included_bytes
-                [included_bytes_iterator..included_bytes_iterator + mime_bytes_length];
-            let mime = unsafe { str::from_utf8_unchecked(mime_bytes) };
-            included_bytes_iterator += mime_bytes_length;
-
-            // content
-            // content_length
-            if included_bytes_iterator + 4 > included_bytes.len() {
-                return Err(format_err!(
-                    "Premature input termination. content_length phase. Position: {}",
-                    included_bytes_iterator
-                ));
-            }
-            let content_length = u32::from_ne_bytes(unsafe {
-                [
-                    *included_bytes.get_unchecked(included_bytes_iterator + 0),
-                    *included_bytes.get_unchecked(included_bytes_iterator + 1),
-                    *included_bytes.get_unchecked(included_bytes_iterator + 2),
-                    *included_bytes.get_unchecked(included_bytes_iterator + 3),
-                ]
-            });
-            let content_length = content_length as usize;
-            included_bytes_iterator += 4;
-
-            // content
-            if included_bytes_iterator + content_length > included_bytes.len() {
-                return Err(format_err!(
-                    "Premature input termination. content phase. Position: {}",
-                    included_bytes_iterator
-                ));
-            }
-            // TODO: Make this unchecked for speed?
-            let content =
-                &included_bytes[included_bytes_iterator..included_bytes_iterator + content_length];
-            included_bytes_iterator += content_length;
-
-            // Insert file descriptor to collection
-            if files
-                .insert(
-                    path,
-                    FileDescriptor {
-                        mime,
-                        content: content,
-                    },
-                )
-                .is_some()
-            {
+            // Push to collection.
+            if files.insert(path, file_descriptor).is_some() {
                 return Err(format_err!("File corrupted, duplicated path: {}", path));
             }
         }
-
+        log::info!("Loaded total {} files", files.len());
         Ok(Self { files })
     }
+
+    /// Retrieves file from pack.
+    /// The path should usually start with `/`, exactly as in URL.
+    /// Returns `Some(&FileDescriptor)` if file is found, `None` otherwise.
     pub fn get(&self, path: &str) -> Option<&FileDescriptor> {
         return self.files.get(path);
     }

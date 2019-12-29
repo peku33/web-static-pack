@@ -1,5 +1,6 @@
-use failure::{err_msg, format_err, Error};
+use failure::{err_msg, Error};
 use mime_guess::Mime;
+use sha3::{Digest, Sha3_256};
 use std::collections::LinkedList;
 use std::convert::TryInto;
 use std::fs::File;
@@ -11,6 +12,7 @@ use walkdir::WalkDir;
 struct FileDescriptor {
     pack_path: String,
     mime: Mime,
+    etag: String,
     file: File,
 }
 impl FileDescriptor {
@@ -37,21 +39,23 @@ impl FileDescriptor {
         // mime, length as above
         write.write(mime_bytes)?;
 
+        // etag
+        let etag_bytes = self.etag.as_bytes();
+        // etag length, u8, 1 byte
+        let etag_bytes_length: u8 = etag_bytes.len().try_into()?;
+        write.write(&etag_bytes_length.to_ne_bytes())?;
+        // etag, length as above
+        write.write(etag_bytes)?;
+
         // file
         // size as u32, should be enough
         let file_bytes_length: u32 = file_metadata.len().try_into()?;
         write.write(&file_bytes_length.to_ne_bytes())?;
         // file contents
         self.file.seek(SeekFrom::Start(0))?;
-        let file_bytes_length_copied = io::copy(&mut self.file, write)?;
-        if file_bytes_length_copied != file_bytes_length as u64 {
-            return Err(format_err!(
-                "Copy returned different number of bytes ({}) than file metadata ({})",
-                file_bytes_length_copied,
-                file_bytes_length
-            ));
-        }
+        io::copy(&mut self.file, write)?;
 
+        // All done
         Ok(())
     }
 }
@@ -66,11 +70,30 @@ impl Pack {
         }
     }
     pub fn file_add(&mut self, fs_path: PathBuf, pack_path: String) -> Result<(), Error> {
-        let file = File::open(&fs_path)?;
+        log::info!(
+            "Packing file {} into {}",
+            fs_path.as_path().to_string_lossy(),
+            pack_path
+        );
+
+        // file
+        let mut file = File::open(&fs_path)?;
+
+        // mime
         let mime = mime_guess::from_path(&fs_path).first_or_octet_stream();
+
+        // etag
+        let mut etag = Sha3_256::new();
+        file.seek(SeekFrom::Start(0))?;
+        io::copy(&mut file, &mut etag)?;
+        let etag = etag.result();
+        let etag = format!("\"{:x}\"", &etag); // ETag as "quoted" hex sha3
+
+        // FileDescriptor
         self.file_descriptors.push_back(FileDescriptor {
             pack_path,
             mime,
+            etag,
             file,
         });
         Ok(())
