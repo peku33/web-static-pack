@@ -8,7 +8,7 @@
 //! - Combines given directory tree into single, fast, binary-based single-file representation, called `pack`. Use simple CLI tool `examples/packer` to create a pack.
 //! - Pack could be embedded into your application using `std::include_bytes` single macro.
 //! - Super-fast, zero-copy `loader` provides by-name access to files.
-//! - Easy-to-use `hyper_loader` allows super-quick integration with hyper-based server
+//! - Easy-to-use `hyper_loader` allows super-quick integration with hyper-based server.
 //!   
 //! ## Features:
 //! - Super fast, low overhead
@@ -18,6 +18,7 @@
 //!
 //! ## Limitations:
 //! - By default all files with guesses text/ content type are treated as utf-8
+//! - Packs are not guaranteed to be portable across versions / architectures
 //!   
 //! ## Future goals:
 //! - 100% pack-time gzip / deflate / other compression
