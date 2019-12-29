@@ -3,8 +3,11 @@ name = "web-static-pack"
 version = "0.1.0"
 authors = ["Paweł Kubrak <peku33@gmail.com>"]
 edition = "2018"
-
-description = "Embed static resources (GUI, assets, images, styles, html) in executable. Serve them from web application with ease."
+description = "Embed static resources (GUI, assets, images, styles, html) in RUST executable. Serve them from web application with ease."
+license = "MIT"
+homepage = "https://github.com/peku33/web-static-pack"
+repository = "https://github.com/peku33/web-static-pack"
+documentation = "https://docs.rs/web-static-pack"
 
 [dependencies]
 failure = "^0.1.6"
