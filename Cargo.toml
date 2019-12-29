@@ -8,6 +8,7 @@ license = "MIT"
 homepage = "https://github.com/peku33/web-static-pack"
 repository = "https://github.com/peku33/web-static-pack"
 documentation = "https://docs.rs/web-static-pack"
+readme = "README.md"
 
 [dependencies]
 failure = "^0.1.6"
