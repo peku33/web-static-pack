@@ -130,7 +130,7 @@ impl<'l> Responder<'l> {
         // Provide response.
         // TODO: Support content compression.
         let response = hyper::Response::builder()
-            .header(http::header::CONTENT_TYPE, file_descriptor.mime())
+            .header(http::header::CONTENT_TYPE, file_descriptor.content_type())
             .header(
                 http::header::CONTENT_LENGTH,
                 file_descriptor.content().len(),

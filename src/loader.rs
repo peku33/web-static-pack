@@ -9,14 +9,14 @@ use std::str;
 
 /// File descriptor, retrieved from loader.
 pub struct FileDescriptor {
-    mime: &'static str,
+    content_type: &'static str,
     etag: &'static str,
     content: &'static [u8],
 }
 impl FileDescriptor {
-    /// Returns HTTP mime type, to be set in Content-Type.
-    pub fn mime(&self) -> &'static str {
-        self.mime
+    /// Returns HTTP Content-Type.
+    pub fn content_type(&self) -> &'static str {
+        self.content_type
     }
 
     /// Returns quoted http ETag precalculated for this file.
@@ -99,13 +99,13 @@ impl Loader {
         while rest.len() > 0 {
             // Extract.
             let path = unsafe { str::from_utf8_unchecked(Self::read_u16(&mut rest)?) };
-            let mime = unsafe { str::from_utf8_unchecked(Self::read_u8(&mut rest)?) };
+            let content_type = unsafe { str::from_utf8_unchecked(Self::read_u8(&mut rest)?) };
             let etag = unsafe { str::from_utf8_unchecked(Self::read_u8(&mut rest)?) };
             let content = Self::read_u32(&mut rest)?;
 
             // Build FileDescriptor.
             let file_descriptor = FileDescriptor {
-                mime,
+                content_type,
                 etag,
                 content: content,
             };

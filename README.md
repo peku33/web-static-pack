@@ -1,6 +1,6 @@
 # web-static-pack
-Embed static resources (GUI, assets, images, styles, html) in RUST executable.
-Serve them from web application with ease.
+Embed static resources (GUI, assets, images, styles, html) within executable.
+Serve with hyper or any server of your choice.
 
 [![docs.rs](https://docs.rs/web-static-pack/badge.svg)](https://docs.rs/web-static-pack)
   
@@ -15,6 +15,9 @@ Serve them from web application with ease.
 - 100% 'static access, zero data copy
 - 100% pack-time calculated `Content-Type`, `ETag` (using sha3)
 - Almost no external dependencies
+
+## Limitations:
+- By default all files with guesses text/ content type are treated as utf-8
   
 ## Future goals:
 - 100% pack-time gzip / deflate / other compression

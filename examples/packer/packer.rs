@@ -1,5 +1,4 @@
 use failure::{err_msg, Error};
-use mime_guess::Mime;
 use sha3::{Digest, Sha3_256};
 use std::collections::LinkedList;
 use std::convert::TryInto;
@@ -11,7 +10,7 @@ use walkdir::WalkDir;
 
 struct FileDescriptor {
     pack_path: String,
-    mime: Mime,
+    content_type: String,
     etag: String,
     file: File,
 }
@@ -31,13 +30,13 @@ impl FileDescriptor {
         // pack_path, length as above
         write.write(pack_path_bytes)?;
 
-        // mime
-        let mime_bytes = self.mime.as_ref().as_bytes();
-        // mime length, u8, 1 byte
-        let mime_bytes_length: u8 = mime_bytes.len().try_into()?;
-        write.write(&mime_bytes_length.to_ne_bytes())?;
-        // mime, length as above
-        write.write(mime_bytes)?;
+        // content_type
+        let content_type_bytes = self.content_type.as_bytes();
+        // content_type length, u8, 1 byte
+        let content_type_bytes_length: u8 = content_type_bytes.len().try_into()?;
+        write.write(&content_type_bytes_length.to_ne_bytes())?;
+        // content_type, length as above
+        write.write(content_type_bytes)?;
 
         // etag
         let etag_bytes = self.etag.as_bytes();
@@ -79,8 +78,14 @@ impl Pack {
         // file
         let mut file = File::open(&fs_path)?;
 
-        // mime
-        let mime = mime_guess::from_path(&fs_path).first_or_octet_stream();
+        // content_type
+        let mut content_type = mime_guess::from_path(&fs_path)
+            .first_or_octet_stream()
+            .as_ref()
+            .to_owned();
+        if content_type.starts_with("text/") {
+            content_type.push_str("; charset=UTF-8");
+        }
 
         // etag
         let mut etag = Sha3_256::new();
@@ -92,7 +97,7 @@ impl Pack {
         // FileDescriptor
         self.file_descriptors.push_back(FileDescriptor {
             pack_path,
-            mime,
+            content_type,
             etag,
             file,
         });
