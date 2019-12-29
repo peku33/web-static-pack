@@ -1,6 +1,8 @@
 # web-static-pack
 Embed static resources (GUI, assets, images, styles, html) in RUST executable.
 Serve them from web application with ease.
+
+[![docs.rs](https://docs.rs/web-static-pack/badge.svg)](https://docs.rs/web-static-pack)
   
 ## Usage scenario:
 - Combines given directory tree into single, fast, binary-based single-file representation, called `pack`. Use simple CLI tool `examples/packer` to create a pack.
