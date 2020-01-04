@@ -14,7 +14,7 @@
 //! - Super fast, low overhead
 //! - 100% 'static access, zero data copy
 //! - 100% pack-time calculated `Content-Type`, `ETag` (using sha3)
-//! - 100% pack-time calculate gzip-compressed files
+//! - 100% pack-time calculated gzip-compressed files
 //! - Almost no external dependencies
 //!
 //! ## Limitations:
