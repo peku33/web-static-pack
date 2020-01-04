@@ -14,7 +14,7 @@ Serve with hyper or any server of your choice.
 - Super fast, low overhead
 - 100% 'static access, zero data copy
 - 100% pack-time calculated `Content-Type`, `ETag` (using sha3)
-- 100% pack-time calculate gzip-compressed files
+- 100% pack-time calculated gzip-compressed files
 - Almost no external dependencies
 
 ## Limitations:
@@ -31,13 +31,13 @@ Serve with hyper or any server of your choice.
   
 ## Example:
 1. Create a pack from `cargo doc`:
-```
+```shell
 $ cargo doc --no-deps
 $ cargo run --example packer ./target/doc/ docs.pack
 ```
   
 2. Serve docs.pack from your web-application (see `examples/docs`)
-```
+```rust
 use failure::Error;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};

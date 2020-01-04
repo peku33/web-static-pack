@@ -93,9 +93,20 @@ impl<'l> Responder<'l> {
 
     /// Responds to hyper request.
     pub fn respond(&self, request: &hyper::Request<hyper::Body>) -> hyper::Response<StaticBody> {
+        return self.respond_parts(request.method(), request.uri(), request.headers());
+    }
+
+    /// Responds to request given by set of parts (`method`, `uri` and `headers`).
+    /// In most cases `respond` may be used to use hyper request directly.
+    pub fn respond_parts(
+        &self,
+        method: &http::Method,
+        uri: &http::Uri,
+        headers: &http::HeaderMap<http::HeaderValue>,
+    ) -> hyper::Response<StaticBody> {
         // Only GET requests are allowed.
         // TODO: Handle HEAD requests.
-        match *request.method() {
+        match *method {
             http::Method::GET => (),
             _ => {
                 return hyper::Response::builder()
@@ -106,7 +117,7 @@ impl<'l> Responder<'l> {
         };
 
         // Find file for given request.
-        let file_descriptor = match self.loader.get(request.uri().path()) {
+        let file_descriptor = match self.loader.get(uri.path()) {
             Some(file_descriptor) => file_descriptor,
             None => {
                 return hyper::Response::builder()
@@ -118,7 +129,7 @@ impl<'l> Responder<'l> {
 
         // Check for possible ETag.
         // If ETag exists and matches current file, return 304.
-        if let Some(ref etag_request) = request.headers().get(http::header::IF_NONE_MATCH) {
+        if let Some(ref etag_request) = headers.get(http::header::IF_NONE_MATCH) {
             if etag_request.as_bytes() == file_descriptor.etag().as_bytes() {
                 return hyper::Response::builder()
                     .status(http::StatusCode::NOT_MODIFIED)
@@ -129,7 +140,7 @@ impl<'l> Responder<'l> {
 
         // Check accepted encodings
         let mut accepted_encoding_gzip = false;
-        if let Some(accept_encoding) = request.headers().get(http::header::ACCEPT_ENCODING) {
+        if let Some(accept_encoding) = headers.get(http::header::ACCEPT_ENCODING) {
             let accept_encoding = match accept_encoding.to_str() {
                 Ok(accept_encoding) => accept_encoding,
                 Err(_) => {
