@@ -60,7 +60,7 @@ async fn service(request: Request<Body>) -> Result<Response<StaticBody>, Infalli
         static ref RESPONDER: Responder<'static> = Responder::new(&LOADER);
     }
     
-    Ok(RESPONDER.respond(&request))
+    Ok(RESPONDER.request_respond(&request))
 }
   
 async fn main_result() -> Result<(), Error> {
