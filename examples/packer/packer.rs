@@ -107,8 +107,8 @@ impl Pack {
 
         // etag
         let mut etag = Sha3_256::new();
-        etag.input(&content);
-        let etag = etag.result();
+        etag.update(&content);
+        let etag = etag.finalize();
         let etag = format!("\"{:x}\"", &etag); // ETag as "quoted" hex sha3
 
         // Info
