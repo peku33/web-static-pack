@@ -1,41 +1,5 @@
-[package]
-name = "web-static-pack"
-version = "0.3.2"
-authors = ["Paweł Kubrak <peku33@gmail.com>"]
-edition = "2018"
-description = "Embed static resources (GUI, assets, images, styles, html) within executable. Serve with hyper or any server of your choice."
-license = "MIT"
-homepage = "https://github.com/peku33/web-static-pack"
-repository = "https://github.com/peku33/web-static-pack"
-documentation = "https://docs.rs/web-static-pack"
-readme = "README.md"
-
-[dependencies]
-failure = "0.1.8"
-log = "0.4.11"
-
-# For hyper_loader 
-http = { version = "0.2.1", optional = true }
-http-body = { version = "0.3.1", optional = true }
-hyper = { version = "0.13.7", optional = true }
-
-[dev-dependencies]
-bytes = "0.5.6"
-clap = "2.33.1"
-itertools = "0.9.0"
-lazy_static = "1.4.0"
-libflate = "1.0.2"
-mime_guess = "2.0.3"
-sha3 = "0.9.1"
-simple_logger = "1.6.0"
-tokio = { version = "0.2.22", features = ["full"] }
-walkdir = "2.3.1"
-
-
-[features]
-default = ["hyper_loader"]
-hyper_loader = [
-    "hyper",
-    "http-body",
-    "http",
+[workspace]
+members = [
+    "loader",
+    "packer",
 ]

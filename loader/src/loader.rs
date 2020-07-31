@@ -98,7 +98,7 @@ impl Loader {
 
     /// Creates a loader.
     /// Pass result of `std::include_bytes` macro here.
-    /// Create pack (for inclusion) with `examples/packer`.
+    /// Create pack (for inclusion) with `web-static-pack-packer`.
     pub fn new(included_bytes: &'static [u8]) -> Result<Self, Error> {
         let mut rest = included_bytes;
         let mut files = HashMap::<&'static str, FileDescriptor>::new();
