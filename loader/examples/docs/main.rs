@@ -1,9 +1,10 @@
 //! Serves this package docs using tokio + hyper + web_static_pack.
 //!
-//! 1. Create docs in `target/doc` directory: `cargo doc --no-deps`.
-//! 2. Run packer `cargo run --example packer ./target/doc/ ./examples/docs/docs.pack`.
-//! 3. Build & run this example `cargo run --example docs`.
-//! 4. Open http://localhost:8080/ in your browser.
+//! 1. Run local or install packer executable: `cargo run` or `cargo install web-static-pack-packer`
+//! 2. Create docs in `target/doc` directory: `cargo doc --no-deps`.
+//! 3. Run packer `web-static-pack-packer ./target/doc/ ./loader/examples/docs/docs.pack`.
+//! 4. Build & run this example `cargo run --example docs`.
+//! 5. Open http://localhost:8080/ in your browser.
 
 use failure::Error;
 use hyper::service::{make_service_fn, service_fn};

@@ -5,7 +5,7 @@
 //! [![docs.rs](https://docs.rs/web-static-pack/badge.svg)](https://docs.rs/web-static-pack)
 //!   
 //! ## Usage scenario:
-//! - Combines given directory tree into single, fast, binary-based single-file representation, called `pack`. Use simple CLI tool `examples/packer` to create a pack.
+//! - Combines given directory tree into single, fast, binary-based single-file representation, called `pack`. Use simple CLI tool `web-static-pack-packer` to create a pack.
 //! - Pack could be embedded into your application using `std::include_bytes` single macro.
 //! - Super-fast, zero-copy `loader` provides by-name access to files.
 //! - Easy-to-use `hyper_loader` allows super-quick integration with hyper-based server.
@@ -33,7 +33,7 @@
 //! 1. Create a pack from `cargo doc`:
 //! ```
 //! $ cargo doc --no-deps
-//! $ cargo run --example packer ./target/doc/ docs.pack
+//! $ cargo run ./target/doc/ docs.pack
 //! ```
 //!   
 //! 2. Serve docs.pack from your web-application (see `examples/docs`)
