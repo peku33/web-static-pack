@@ -6,10 +6,12 @@
 //! Use `request_respond()` method to serve file in response to request.
 
 use super::loader::Loader;
-use std::cmp;
-use std::convert::Infallible;
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::{
+    cmp,
+    convert::Infallible,
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 /// Represents hyper HttpBody compatible response based on static memory chunk.
 /// This is used as a body handler for [u8] content, directly from loader.
@@ -71,7 +73,7 @@ impl hyper::body::HttpBody for StaticBody {
 
     // We know where we are, so we can override this method and provide good hints.
     fn is_end_stream(&self) -> bool {
-        self.pending_content.len() <= 0
+        self.pending_content.is_empty()
     }
 
     // Chunks size is known, so we can always provide exact hint.
@@ -103,10 +105,10 @@ impl ResponderError {
 
     /// Creates default response (status code + empty body) for this error.
     pub fn as_default_response(&self) -> hyper::Response<StaticBody> {
-        return hyper::Response::builder()
+        hyper::Response::builder()
             .status(self.as_http_status_code())
             .body(StaticBody::default())
-            .unwrap();
+            .unwrap()
     }
 }
 
@@ -127,7 +129,7 @@ impl<'l> Responder<'l> {
         &self,
         request: &hyper::Request<hyper::Body>,
     ) -> Result<hyper::Response<StaticBody>, ResponderError> {
-        return self.parts_respond_or_error(request.method(), request.uri(), request.headers());
+        self.parts_respond_or_error(request.method(), request.uri(), request.headers())
     }
 
     /// Given set of parts (`method`, `uri` and `headers`), responds to it, or returns `ResponderError`.

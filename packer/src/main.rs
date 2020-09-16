@@ -14,18 +14,35 @@
 
 mod packer;
 
-use failure::Error;
+use anyhow::{Context, Error};
+use log::LevelFilter;
 use packer::Pack;
+use simple_logger::SimpleLogger;
 use std::path::Path;
 
 fn main() -> Result<(), Error> {
-    simple_logger::init().unwrap();
+    SimpleLogger::new()
+        .with_level(LevelFilter::Info)
+        .init()
+        .unwrap();
 
     let matches = clap::App::new("web-static-pack packer")
-    .arg(clap::Arg::with_name("path").help("the directory to pack").required(true))
-    .arg(clap::Arg::with_name("output_file").help("name of the build pack").required(true))
-    .arg(clap::Arg::with_name("root_path").help("relative path to build pack paths with. use the same as `path` to have all paths in pack root").required(false))
-    .get_matches();
+        .arg(
+            clap::Arg::with_name("path")
+                .help("the directory to pack")
+                .required(true),
+        )
+        .arg(
+            clap::Arg::with_name("output_file")
+                .help("name of the build pack")
+                .required(true),
+        )
+        .arg(
+            clap::Arg::with_name("root_path")
+                .help("relative path to build pack paths with. use the same as `path` to have all paths in pack root")
+                .required(false),
+        )
+        .get_matches();
 
     let path = Path::new(matches.value_of("path").unwrap());
     let root_path = match matches.value_of("root_path") {
@@ -35,7 +52,8 @@ fn main() -> Result<(), Error> {
     let output_file = Path::new(matches.value_of("output_file").unwrap());
 
     let mut pack = Pack::new();
-    pack.directory_add(path, root_path)?;
-    pack.store(output_file)?;
+    pack.directory_add(path, root_path)
+        .context("directory_add")?;
+    pack.store(output_file).context("store")?;
     Ok(())
 }

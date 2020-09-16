@@ -3,9 +3,8 @@
 //! After creating a pack with cli packer tool, include this into your program with `include_bytes` macro. Then pass it to `Loader::new()`.
 //! Files may be retrieved using `get()` method.
 
-use failure::{err_msg, format_err, Error};
-use std::collections::HashMap;
-use std::str;
+use anyhow::{bail, Context, Error};
+use std::{collections::HashMap, str};
 
 /// File descriptor, retrieved from loader.
 pub struct FileDescriptor {
@@ -44,12 +43,12 @@ pub struct Loader {
 impl Loader {
     fn read_u8(rest: &mut &'static [u8]) -> Result<&'static [u8], Error> {
         if rest.len() < 1 {
-            return Err(err_msg("Premature length termination"));
+            bail!("Premature length termination");
         }
         let length = u8::from_ne_bytes(unsafe { [*rest.get_unchecked(0)] }) as usize;
 
         if rest.len() - 1 < length {
-            return Err(err_msg("Premature data termination"));
+            bail!("Premature data termination");
         }
         let data = &rest[1..(1 + length)];
 
@@ -59,13 +58,13 @@ impl Loader {
     }
     fn read_u16(rest: &mut &'static [u8]) -> Result<&'static [u8], Error> {
         if rest.len() < 2 {
-            return Err(err_msg("Premature length termination"));
+            bail!("Premature length termination");
         }
         let length = u16::from_ne_bytes(unsafe { [*rest.get_unchecked(0), *rest.get_unchecked(1)] })
             as usize;
 
         if rest.len() - 2 < length {
-            return Err(err_msg("Premature data termination"));
+            bail!("Premature data termination");
         }
         let data = &rest[2..(2 + length)];
 
@@ -75,7 +74,7 @@ impl Loader {
     }
     fn read_u32(rest: &mut &'static [u8]) -> Result<&'static [u8], Error> {
         if rest.len() < 4 {
-            return Err(err_msg("Premature length termination"));
+            bail!("Premature length termination");
         }
         let length = u32::from_ne_bytes(unsafe {
             [
@@ -87,7 +86,7 @@ impl Loader {
         }) as usize;
 
         if rest.len() - 4 < length {
-            return Err(err_msg("Premature data termination"));
+            bail!("Premature data termination");
         }
         let data = &rest[4..(4 + length)];
 
@@ -102,14 +101,18 @@ impl Loader {
     pub fn new(included_bytes: &'static [u8]) -> Result<Self, Error> {
         let mut rest = included_bytes;
         let mut files = HashMap::<&'static str, FileDescriptor>::new();
-        while rest.len() > 0 {
+        while !rest.is_empty() {
             // Extract.
-            let path = unsafe { str::from_utf8_unchecked(Self::read_u16(&mut rest)?) };
-            let content_type = unsafe { str::from_utf8_unchecked(Self::read_u8(&mut rest)?) };
-            let etag = unsafe { str::from_utf8_unchecked(Self::read_u8(&mut rest)?) };
-            let content = Self::read_u32(&mut rest)?;
-            let content_gzip = Self::read_u32(&mut rest)?;
-            let content_gzip = if content_gzip.len() > 0 {
+            let path =
+                unsafe { str::from_utf8_unchecked(Self::read_u16(&mut rest).context("path")?) };
+            let content_type = unsafe {
+                str::from_utf8_unchecked(Self::read_u8(&mut rest).context("content_type")?)
+            };
+            let etag =
+                unsafe { str::from_utf8_unchecked(Self::read_u8(&mut rest).context("etag")?) };
+            let content = Self::read_u32(&mut rest).context("content")?;
+            let content_gzip = Self::read_u32(&mut rest).context("content_gzip")?;
+            let content_gzip = if !content_gzip.is_empty() {
                 Some(content_gzip)
             } else {
                 None
@@ -125,7 +128,7 @@ impl Loader {
 
             // Push to collection.
             if files.insert(path, file_descriptor).is_some() {
-                return Err(format_err!("File corrupted, duplicated path: {}", path));
+                bail!("File corrupted, duplicated path: {}", path);
             }
         }
         log::info!("Loaded total {} files", files.len());
@@ -135,7 +138,10 @@ impl Loader {
     /// Retrieves file from pack.
     /// The path should usually start with `/`, exactly as in URL.
     /// Returns `Some(&FileDescriptor)` if file is found, `None` otherwise.
-    pub fn get(&self, path: &str) -> Option<&FileDescriptor> {
-        return self.files.get(path);
+    pub fn get(
+        &self,
+        path: &str,
+    ) -> Option<&FileDescriptor> {
+        self.files.get(path)
     }
 }

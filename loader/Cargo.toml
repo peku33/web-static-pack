@@ -1,6 +1,6 @@
 [package]
 name = "web-static-pack"
-version = "0.3.3"
+version = "0.3.4"
 authors = ["Paweł Kubrak <peku33@gmail.com>"]
 edition = "2018"
 description = "Embed static resources (GUI, assets, images, styles, html) within executable. Serve with hyper or any server of your choice."
@@ -11,7 +11,7 @@ documentation = "https://docs.rs/web-static-pack"
 readme = "README.md"
 
 [dependencies]
-failure = "0.1.8"
+anyhow = "1.0.32"
 log = "0.4.11"
 
 # For hyper_loader 
@@ -21,7 +21,7 @@ hyper = { version = "0.13.7", optional = true }
 
 [dev-dependencies]
 lazy_static = "1.4.0"
-simple_logger = "1.6.0"
+simple_logger = "1.9.0"
 tokio = { version = "0.2.22", features = ["full"] }
 
 [features]

@@ -6,18 +6,26 @@
 //! 4. Build & run this example `cargo run --example docs`.
 //! 5. Open http://localhost:8080/ in your browser.
 
-use failure::Error;
-use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response, Server};
+use anyhow::{Context, Error};
+use hyper::{
+    service::{make_service_fn, service_fn},
+    Body, Request, Response, Server,
+};
 use lazy_static::lazy_static;
-use std::convert::Infallible;
-use std::net::SocketAddr;
-use web_static_pack::hyper_loader::{Responder, StaticBody};
-use web_static_pack::loader::Loader;
+use log::LevelFilter;
+use simple_logger::SimpleLogger;
+use std::{convert::Infallible, net::SocketAddr};
+use web_static_pack::{
+    hyper_loader::{Responder, StaticBody},
+    loader::Loader,
+};
 
 #[tokio::main]
 async fn main() -> () {
-    simple_logger::init_with_level(log::Level::Info).unwrap();
+    SimpleLogger::new()
+        .with_level(LevelFilter::Info)
+        .init()
+        .unwrap();
     main_result().await.unwrap()
 }
 
@@ -38,5 +46,5 @@ async fn main_result() -> Result<(), Error> {
     }));
 
     log::info!("Server listening on {:?}", address);
-    Ok(server.await?)
+    Ok(server.await.context("server")?)
 }

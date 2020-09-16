@@ -1,6 +1,6 @@
 [package]
 name = "web-static-pack-packer"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Paweł Kubrak <peku33@gmail.com>"]
 edition = "2018"
 description = "Installable web-static-pack-packer tool for web-static-pack crate"
@@ -12,12 +12,12 @@ readme = "README.md"
 
 [dependencies]
 bytes = "0.5.6"
-clap = "2.33.1"
-failure = "0.1.8"
+clap = "2.33.3"
+anyhow = "1.0.32"
 itertools = "0.9.0"
 libflate = "1.0.2"
 log = "0.4.11"
 mime_guess = "2.0.3"
 sha3 = "0.9.1"
-simple_logger = "1.6.0"
+simple_logger = "1.9.0"
 walkdir = "2.3.1"
