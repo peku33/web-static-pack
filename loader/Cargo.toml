@@ -14,10 +14,11 @@ readme = "README.md"
 anyhow = "1.0.32"
 log = "0.4.11"
 
-# For hyper_loader 
+# For hyper_loader
+futures = { version = "0.3.7", optional = true }
 http = { version = "0.2.1", optional = true }
 http-body = { version = "0.3.1", optional = true }
-hyper = { version = "0.13.7", optional = true }
+hyper = { version = "0.13.9", optional = true }
 
 [dev-dependencies]
 lazy_static = "1.4.0"
@@ -26,8 +27,4 @@ tokio = { version = "0.2.22", features = ["full"] }
 
 [features]
 default = ["hyper_loader"]
-hyper_loader = [
-    "hyper",
-    "http-body",
-    "http",
-]
+hyper_loader = ["hyper", "http-body", "http", "futures"]

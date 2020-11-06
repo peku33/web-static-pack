@@ -6,6 +6,7 @@
 //! Use `request_respond()` method to serve file in response to request.
 
 use super::loader::Loader;
+use futures::Stream;
 use std::{
     cmp,
     convert::Infallible,
@@ -79,6 +80,16 @@ impl hyper::body::HttpBody for StaticBody {
     // Chunks size is known, so we can always provide exact hint.
     fn size_hint(&self) -> http_body::SizeHint {
         http_body::SizeHint::with_exact(self.pending_content.len() as u64)
+    }
+}
+impl Stream for StaticBody {
+    type Item = &'static [u8];
+
+    fn poll_next(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Option<Self::Item>> {
+        hyper::body::HttpBody::poll_data(self, cx).map(|a| a.map(Result::unwrap))
     }
 }
 
