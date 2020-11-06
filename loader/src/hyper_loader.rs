@@ -33,6 +33,19 @@ impl StaticBody {
             pending_content: content,
         }
     }
+
+    pub fn into_body(self) -> hyper::Body {
+        use futures::StreamExt;
+        use hyper::body::Bytes;
+        use std::error::Error;
+
+        let boxed: Box<
+            dyn Stream<Item = Result<Bytes, Box<dyn Error + 'static + Sync + Send>>>
+                + 'static
+                + Send,
+        > = Box::new(self.map(|b| Ok(Bytes::from_static(b))));
+        boxed.into()
+    }
 }
 impl Default for StaticBody {
     /// Creates StaticBody initialized with empty chunk, therefore yielding empty body.
