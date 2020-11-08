@@ -1,6 +1,6 @@
 //! Main loader module.
 //! This is the part you should include in you target project if you want to read packs directly.
-//! After creating a pack with cli packer tool, include this into your program with `include_bytes` macro. Then pass it to `Loader::new()`.
+//! After creating a pack with cli packer tool, include this into your program with `include_bytes!` macro. Then pass it to `Loader::new()`.
 //! Files may be retrieved using `get()` method.
 
 use anyhow::{bail, Context, Error};
@@ -35,13 +35,14 @@ impl FileDescriptor {
     }
 }
 
-/// Main loader. Create using `::new()` providing reference to result of `include_bytes`.
+/// Main loader. Create using `::new()` providing reference to result of `include_bytes!`.
 /// Call `get()` to access files.
 pub struct Loader {
     files: HashMap<&'static str, FileDescriptor>,
 }
 impl Loader {
     fn read_u8(rest: &mut &'static [u8]) -> Result<&'static [u8], Error> {
+        #[allow(clippy::len_zero)]
         if rest.len() < 1 {
             bail!("Premature length termination");
         }
@@ -96,7 +97,7 @@ impl Loader {
     }
 
     /// Creates a loader.
-    /// Pass result of `std::include_bytes` macro here.
+    /// Pass result of `include_bytes!` macro here.
     /// Create pack (for inclusion) with `web-static-pack-packer`.
     pub fn new(included_bytes: &'static [u8]) -> Result<Self, Error> {
         let mut rest = included_bytes;

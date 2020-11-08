@@ -14,24 +14,21 @@ use hyper::{
 use lazy_static::lazy_static;
 use log::LevelFilter;
 use simple_logger::SimpleLogger;
-use std::{convert::Infallible, net::SocketAddr};
-use web_static_pack::{
-    hyper_loader::{Responder, StaticBody},
-    loader::Loader,
-};
+use std::{convert::Infallible, include_bytes, net::SocketAddr};
+use web_static_pack::{hyper_loader::Responder, loader::Loader};
 
 #[tokio::main]
 async fn main() -> () {
-    SimpleLogger::new()
+    SimpleLogger::from_env()
         .with_level(LevelFilter::Info)
         .init()
         .unwrap();
     main_result().await.unwrap()
 }
 
-async fn service(request: Request<Body>) -> Result<Response<StaticBody>, Infallible> {
+async fn service(request: Request<Body>) -> Result<Response<Body>, Infallible> {
     lazy_static! {
-        static ref PACK: &'static [u8] = std::include_bytes!("docs.pack");
+        static ref PACK: &'static [u8] = include_bytes!("docs.pack");
         static ref LOADER: Loader = Loader::new(&PACK).unwrap();
         static ref RESPONDER: Responder<'static> = Responder::new(&LOADER);
     }
