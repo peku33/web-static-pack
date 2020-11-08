@@ -195,10 +195,7 @@ impl Pack {
             // Convert directory notation to linux-like
             let pack_path_components = relative_path
                 .components()
-                .filter(|component| match component {
-                    Component::RootDir => false,
-                    _ => true,
-                })
+                .filter(|component| !matches!(component, Component::RootDir))
                 .map(|component| {
                     component
                         .as_os_str()
