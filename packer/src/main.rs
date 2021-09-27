@@ -21,7 +21,8 @@ use simple_logger::SimpleLogger;
 use std::path::Path;
 
 fn main() -> Result<(), Error> {
-    SimpleLogger::from_env()
+    SimpleLogger::new()
+        .env()
         .with_level(LevelFilter::Info)
         .init()
         .unwrap();

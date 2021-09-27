@@ -86,7 +86,7 @@ impl<'l> Responder<'l> {
 
         // Check for possible ETag.
         // If ETag exists and matches current file, return 304.
-        if let Some(ref etag_request) = headers.get(header::IF_NONE_MATCH) {
+        if let Some(etag_request) = headers.get(header::IF_NONE_MATCH) {
             if etag_request.as_bytes() == file_descriptor.etag().as_bytes() {
                 return Ok(Response::builder()
                     .status(StatusCode::NOT_MODIFIED)

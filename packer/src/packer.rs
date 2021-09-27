@@ -87,7 +87,7 @@ impl FileDescriptor {
             .write_all(&content_bytes_gzip_length.to_ne_bytes())
             .context("content_bytes_gzip_length")?;
         // content_gzip, if available
-        if let Some(ref content_gzip) = self.content_gzip {
+        if let Some(content_gzip) = self.content_gzip.as_ref() {
             write.write_all(content_gzip).context("content_gzip")?;
         }
 

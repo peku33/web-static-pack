@@ -50,8 +50,9 @@
 //! use web_static_pack::{hyper_loader::Responder, loader::Loader};
 //!
 //! #[tokio::main]
-//! async fn main() -> () {
-//!     SimpleLogger::from_env()
+//! async fn main()  {
+//!     SimpleLogger::new()
+//!         .env()
 //!         .with_level(LevelFilter::Info)
 //!         .init()
 //!         .unwrap();
