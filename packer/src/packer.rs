@@ -215,7 +215,7 @@ impl Pack {
         &mut self,
         path: &Path,
     ) -> Result<(), Error> {
-        let mut file = File::create(&path).context("file")?;
+        let mut file = File::create(path).context("file")?;
         for file_descriptor in self.file_descriptors.iter_mut() {
             file_descriptor
                 .serialize_into(&mut file)

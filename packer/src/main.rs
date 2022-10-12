@@ -18,7 +18,7 @@ use anyhow::{Context, Error};
 use log::LevelFilter;
 use packer::Pack;
 use simple_logger::SimpleLogger;
-use std::path::Path;
+use std::path::PathBuf;
 
 fn main() -> Result<(), Error> {
     SimpleLogger::new()
@@ -27,34 +27,38 @@ fn main() -> Result<(), Error> {
         .init()
         .unwrap();
 
-    let matches = clap::App::new("web-static-pack packer")
+    let matches = clap::builder::Command::new("web-static-pack packer")
         .arg(
-            clap::Arg::with_name("path")
+            clap::builder::Arg::new("path")
                 .help("the directory to pack")
-                .required(true),
+                .required(true)
+                .value_parser(clap::builder::PathBufValueParser::new()),
         )
         .arg(
-            clap::Arg::with_name("output_file")
+            clap::builder::Arg::new("output_file")
                 .help("name of the build pack")
-                .required(true),
+                .required(true)
+                .value_parser(clap::builder::PathBufValueParser::new())
+                ,
         )
         .arg(
-            clap::Arg::with_name("root_path")
+            clap::builder::Arg::new("root_path")
                 .help("relative path to build pack paths with. use the same as `path` to have all paths in pack root")
-                .required(false),
+                .required(false)
+                .value_parser(clap::builder::PathBufValueParser::new())
         )
         .get_matches();
 
-    let path = Path::new(matches.value_of("path").unwrap());
-    let root_path = match matches.value_of("root_path") {
-        Some(root_path) => Path::new(root_path),
-        None => Path::new(""),
-    };
-    let output_file = Path::new(matches.value_of("output_file").unwrap());
+    let path = matches.get_one::<PathBuf>("path").cloned().unwrap();
+    let output_file = matches.get_one::<PathBuf>("output_file").cloned().unwrap();
+    let root_path = matches
+        .get_one::<PathBuf>("root_path")
+        .cloned()
+        .unwrap_or_else(PathBuf::new);
 
     let mut pack = Pack::new();
-    pack.directory_add(path, root_path)
+    pack.directory_add(&path, &root_path)
         .context("directory_add")?;
-    pack.store(output_file).context("store")?;
+    pack.store(&output_file).context("store")?;
     Ok(())
 }

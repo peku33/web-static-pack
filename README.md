@@ -76,7 +76,9 @@ async fn main_result() -> Result<(), Error> {
     }));
 
     log::info!("Server listening on {:?}", address);
-    Ok(server.await.context("server")?)
+    server.await.context("server")?;
+
+    Ok(())
 }
 ```
 
