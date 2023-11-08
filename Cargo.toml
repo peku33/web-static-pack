@@ -1,5 +1,3 @@
 [workspace]
-members = [
-    "loader",
-    "packer",
-]
+members = ["loader", "packer"]
+resolver = "2"
