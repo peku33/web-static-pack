@@ -1,23 +1,28 @@
 [package]
 name = "web-static-pack-packer"
-version = "0.1.6"
+version = "0.5.0-beta.1"
 authors = ["Paweł Kubrak <peku33@gmail.com>"]
 edition = "2021"
-description = "Installable web-static-pack-packer tool for web-static-pack crate"
 license = "MIT"
+description = "Installable web-static-pack-packer tool for web-static-pack crate"
 homepage = "https://github.com/peku33/web-static-pack"
 repository = "https://github.com/peku33/web-static-pack"
-documentation = "https://docs.rs/web-static-pack"
 readme = "README.md"
+keywords = ["web", "http", "static", "resources", "hyper"]
+categories = ["web-programming"]
 
 [dependencies]
-bytes = "1.5.0"
-clap = "4.4.7"
-anyhow = "1.0.75"
-itertools = "0.11.0"
-libflate = "2.0.0"
-log = "0.4.20"
-mime_guess = "2.0.4"
+web-static-pack-common = { version = "0.5.0-beta.1", path = "../common" }
+
+anyhow = "1.0.86"
+brotli = "6.0.0"
+clap = { version = "4.5.8", features = ["derive"] }
+flate2 = "1.0"
+itertools = "0.13.0"
+mime_guess = "2.0.5"
+rkyv = { version = "0.7.44" }
 sha3 = "0.10.8"
-simple_logger = "4.2.0"
-walkdir = "2.4.0"
+walkdir = "2.5.0"
+
+[dev-dependencies]
+test-case = "3.3.1"

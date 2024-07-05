@@ -1,29 +1,26 @@
 [package]
 name = "web-static-pack"
-version = "0.4.4"
+version = "0.5.0-beta.1"
 authors = ["Paweł Kubrak <peku33@gmail.com>"]
 edition = "2021"
-description = "Embed static resources (GUI, assets, images, styles, html) within executable. Serve with hyper or any server of your choice."
 license = "MIT"
+description = "Embed static resources (GUI, assets, images, styles, html) within executable. Serve with hyper or any server of your choice."
 homepage = "https://github.com/peku33/web-static-pack"
 repository = "https://github.com/peku33/web-static-pack"
-documentation = "https://docs.rs/web-static-pack"
 readme = "README.md"
+keywords = ["web", "http", "static", "resources", "hyper"]
+categories = ["web-programming"]
 
 [dependencies]
-anyhow = "1.0.75"
-log = "0.4.20"
+web-static-pack-common = { version = "0.5.0-beta.1", path = "../common" }
 
-# For hyper_loader 
-http = { version = "0.2.9", optional = true }
-http-body = { version = "0.4.5", optional = true }
-hyper = { version = "0.14.27", features = ["full"], optional = true }
+anyhow = "1.0.86"
+http = "1.1.0"
+http-body = "1.0.0"
+rkyv = { version = "0.7.44" } # features = ["copy", "copy_unsafe"]
 
 [dev-dependencies]
-lazy_static = "1.4.0"
-simple_logger = "4.2.0"
-tokio = { version = "1.33.0", features = ["full"] }
-
-[features]
-default = ["hyper_loader"]
-hyper_loader = ["hyper", "http-body", "http"]
+http-body-util = "0.1.2"
+hyper = { version = "1.4.0", features = ["full"] }
+test-case = "3.3.1"
+tokio = { version = "1.38.0", features = ["full"] }

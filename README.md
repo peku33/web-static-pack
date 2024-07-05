@@ -1,97 +1,100 @@
 # web-static-pack
-Embed static resources (GUI, assets, images, styles, html) within executable.
-Serve with hyper or any server of your choice.
+web-static-pack is a set of tools for embedding static resources (GUI, assets, images, styles, html) inside your app, to be later served with a http server of your choice (like `hyper`).
 
-[![docs.rs](https://docs.rs/web-static-pack/badge.svg)](https://docs.rs/web-static-pack)
-  
-## Usage scenario:
-- Combines given directory tree into single, fast, binary-based single-file representation, called `pack`. Use simple CLI tool `web-static-pack-packer` to create a pack.
-- Pack could be embedded into your application using `include_bytes!` single macro.
-- Super-fast, zero-copy `loader` provides by-name access to files.
-- Easy-to-use `hyper_loader` allows super-quick integration with hyper-based server.
-  
-## Features:
-- Super fast, low overhead
-- 100% 'static access, zero data copy
-- 100% pack-time calculated `Content-Type`, `ETag` (using sha3)
-- 100% pack-time calculated gzip-compressed files
-- Almost no external dependencies
+It consists of two parts:
+- [web-static-pack-packer](https://crates.io/crates/web-static-pack-packer) (aka "packer") - a standalone application (can be used as a library) used to serialize your assets into single file, called `pack`. It will usually be used before you build your target application (eg. in build script / CI / build.rs). During creation of a `pack` all heavy computations are done, eg. calculating `ETag`, compressed (`gzip`, `brotli`) versions, mime guessing etc. As a result a `pack` file is created, to be used by the next part.
+- [web-static-pack](https://github.com/peku33/web-static-pack) (aka "loader") - a library to include in your target application that will read the `pack` (preferably included in the application with <https://docs.rs/include_bytes_aligned/latest/include_bytes_aligned/>). Then `pack` can be used to form a `http` `service` (a function taking a request and returning response) serving files from the `pack`.
 
-## Limitations:
-- By default all files with guesses text/ content type are treated as utf-8
-- Packs are not guaranteed to be portable across versions / architectures
-  
-## Future goals:
-- You tell me
-  
-## Non-Goals:
-- Directory listings
-- automatic index.html resolving
-- Uploads
-  
-## Example:
-1. Create a pack from `cargo doc`:
+## Features
+- Precomputed (in "packer") `ETag` (using `sha3`), compressed bodies (in `gzip` and `brotli` formats), `content-type`, etc. This reduces both runtime overhead and dependencies of your target application.
+- Zero-copy deserialization of a `pack` thanks to [rkyv](https://crates.io/crates/rkyv), allows the pack to be read directly from program memory, without allocating additional ram for pack contents.
+- `GET`/`HEAD` http methods support, `ETag`/`if-none-match` support, `accept-encoding`/`content-encoding` negotiation, `cache-control`, `content-length` etc.
+
+### Non goals
+- Directory listings.
+- index.html resolving.
+
+### Limitations
+- `pack` is not portable across crate versions / architectures.
+- Text files `text/*` are assumed to be utf-8 encoded.
+
+## Examples
+For this example lets assume you are building api + gui application in rust. Your gui is pre-built (like with `npm build` or similar) in `./vcard-personal-portfolio` directory (available for real in `tests/data/`) and you want to serve it from `/` of your app.
+
+### Packing your assets
+Refer to [web-static-pack-packer](https://crates.io/crates/web-static-pack-packer) for full documentation.
+
+To pack whole `./vcard-personal-portfolio` directory into `./vcard-personal-portfolio.pack` execute the following command:
 ```bash
-$ cargo doc --no-deps
-$ cargo run ./target/doc/ docs.pack
+$ web-static-pack-packer \
+    directory-single \
+    ./vcard-personal-portfolio \
+    ./vcard-personal-portfolio.pack
 ```
-  
-2. Serve docs.pack from your web-application (see `examples/docs`)
+
+This will create a `./vcard-personal-portfolio.pack` file, containing all your files combined, ready to be included in your target application.
+
+### Serving from your target application
+Refer to [web-static-pack](https://github.com/peku33/web-static-pack) for full example.
+
+You will need to include the pack in your executable with <https://docs.rs/include_bytes_aligned/latest/include_bytes_aligned/>. Then pack needs to be loaded from this binary slice. At the end we construct a http service, that will serve our requests.
+
 ```rust
-use anyhow::{Context, Error};
-use hyper::{
-    service::{make_service_fn, service_fn},
-    Body, Request, Response, Server,
-};
-use lazy_static::lazy_static;
-use log::LevelFilter;
-use simple_logger::SimpleLogger;
-use std::{convert::Infallible, include_bytes, net::SocketAddr};
-use web_static_pack::{hyper_loader::Responder, loader::Loader};
+use include_bytes_aligned::include_bytes_aligned;
 
-#[tokio::main]
-async fn main()  {
-    SimpleLogger::new()
-        .env()
-        .with_level(LevelFilter::Info)
-        .init()
-        .unwrap();
-    main_result().await.unwrap()
-}
+static PACK_ARCHIVED_SERIALIZED: &[u8] = 
+    include_bytes_aligned!(16, "vcard-personal-portfolio.pack");
 
-async fn service(request: Request<Body>) -> Result<Response<Body>, Infallible> {
-    lazy_static! {
-        static ref PACK: &'static [u8] = include_bytes!("docs.pack");
-        static ref LOADER: Loader = Loader::new(&PACK).unwrap();
-        static ref RESPONDER: Responder<'static> = Responder::new(&LOADER);
-    }
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> Result<(), Error> {
+    // load (map / cast) [common::pack::PackArchived] from included bytes
+    let pack_archived = unsafe { load(PACK_ARCHIVED_SERIALIZED).unwrap() };
 
-    Ok(RESPONDER.request_respond(&request))
-}
+    // create a responder (http service) from `pack`
+    let responder = Responder::new(pack_archived);
 
-async fn main_result() -> Result<(), Error> {
-    let address = SocketAddr::from(([0, 0, 0, 0], 8080));
-    let server = Server::bind(&address).serve(make_service_fn(|_connection| async {
-        Ok::<_, Infallible>(service_fn(service))
-    }));
+    // hyper requires service to be static
+    // we use graceful, no connections will outlive server function
+    let responder = unsafe {
+        transmute::<
+            &Responder<'_, _>,
+            &Responder<'static, _>,
+        >(&responder)
+    };
 
-    log::info!("Server listening on {:?}", address);
-    server.await.context("server")?;
+    // make hyper service function
+    let service_fn = service_fn(|request: Request<Incoming>| async {
+        // you can probably filter your /api requests here
+        let (parts, _body) = request.into_parts();
+        let response = responder.respond_flatten(parts);
+        Ok::<_, Infallible>(response)
+    });
+    
+    // run hyper server using service_fn, as in:
+    // https://hyper.rs/guides/1/server/graceful-shutdown/
+    todo!();
 
     Ok(())
 }
 ```
 
-# web-static-pack-packer
-Executable to build packs for web-static-pack crate
-See main crate for details
+## Migrating from 0.4.x to 0.5.x
+The 0.5.0 is almost a complete rewrite, however the general idea remains the same.
+- We still have two parts - packer and loader. There is also a `common` crate and `tests` crate, however they are not meant to be used directly.
+- Lots of internals were changed, including [rkyv](https://crates.io/crates/rkyv) for serialization / zero-copy deserialization. This of course makes packs built with previous versions incompatible with current loader and vice versa.
+- We are now built around [http](https://crates.io/crates/http) crate, which makes web-static-pack compatible with hyper 1.0 without depending on it directly.
 
-[![docs.rs](https://docs.rs/web-static-pack-packer/badge.svg)](https://docs.rs/web-static-pack-packer)
+### BREAKING CHANGES
+- Packer is now built around subcommands. The previous behavior was moved to `directory-single` subcommand, and `root_path` parameter was dropped. See examples.
+- Since we no longer depend on `hyper` in any way (the `http` crate is common interface), `hyper_loader` feature is no longer present in loader.
+- `let loader = loader::Loader::new(...)` is now `let pack_archived = loader::load(...)`. This value is still used for `Responder::new`.
+- `hyper_loader::Responder` is now just `responder::Responder`, and it's now built around `http` crate, compatible with `hyper` 1.0.
+- `Responder` was rewritten. It now accepts request parts (without body) not whole request. `request_respond_or_error` and `parts_respond_or_error` are now `respond`. `request_respond` and `parts_respond` are now `respond_flatten`.
 
-## Usage
-1. Install (`cargo install web-static-pack-packer`) or run locally (`cargo run`)
-2. Provide positional arguments:
-    - `<path>` - the directory to pack
-    - `<output_file>` - name of the build pack
-    - `[root_pach]` - relative path to build pack paths with. use the same as `path` to have all paths in pack root
-3. Use `<output_path>` file with `web-static-pack` (loader)
+### New features and improvements
+- True zero-copy deserialization with `rkyv`.
+- `brotli` compression support.
+- `cache-control` support.
+- Packer is now a lib + bin, making it usable in build.rs. Multiple useful methods were exposed.
+- Good test coverage, including integration tests.
+- Lots of internal improvements.

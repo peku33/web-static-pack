@@ -1,64 +1,191 @@
-//! # web-static-pack-packer
-//! Executable to build packs for web-static-pack crate
-//! See main crate for details
-//!
-//! [![docs.rs](https://docs.rs/web-static-pack-packer/badge.svg)](https://docs.rs/web-static-pack-packer)
-//!
-//! ## Usage
-//! 1. Install (`cargo install web-static-pack-packer`) or run locally (`cargo run`)
-//! 2. Provide positional arguments:
-//!  - `<path>` - the directory to pack
-//!  - `<output_file>` - name of the build pack
-//!  - `[root_pach]` - relative path to build pack paths with. use the same as `path` to have all paths in pack root
-//! 3. Use `<output_path>` file with `web-static-pack` (loader)
+//! Main packer executable, to be used as cli tool. For help run this command
+//! with `-h`.
 
-mod packer;
+#![warn(missing_docs)]
 
 use anyhow::{Context, Error};
-use log::LevelFilter;
-use packer::Pack;
-use simple_logger::SimpleLogger;
-use std::path::PathBuf;
+use clap::{Args, Parser, Subcommand};
+use std::{io::stdin, path::PathBuf};
+use web_static_pack_packer::{directory, file, file_pack_path, pack};
+
+#[derive(Parser, Debug)]
+#[command(version, about)]
+struct Arguments {
+    #[command(subcommand)]
+    pub command: Command,
+}
+
+#[derive(Args, Debug)]
+struct FileGlobalOptions {
+    /// Add gzipped version of file to the `pack`. If not set, uses sane
+    /// defaults.
+    #[arg(long)]
+    pub use_gzip: Option<bool>,
+    /// Add brotli compressed version of file to the `pack`. If not set, uses
+    /// sane defaults.
+    #[arg(long)]
+    pub use_brotli: Option<bool>,
+}
+impl FileGlobalOptions {
+    pub fn into_file_build_from_path_options(self) -> file::BuildFromPathOptions {
+        let mut file_build_from_path_options = file::BuildFromPathOptions::default();
+
+        if let Some(use_gzip) = self.use_gzip {
+            file_build_from_path_options.use_gzip = use_gzip;
+        }
+
+        if let Some(use_brotli) = self.use_brotli {
+            file_build_from_path_options.use_brotli = use_brotli;
+        }
+
+        file_build_from_path_options
+    }
+}
+
+#[derive(Subcommand, Debug)]
+enum Command {
+    /// Creates a single `pack` from recursively searching through single
+    /// directory.
+    ///
+    /// Please note that all found files are added, including hidden files
+    /// (starting with `.` on unix and with certain flags on windows).
+    DirectorySingle {
+        #[command(flatten)]
+        file_global_options: FileGlobalOptions,
+
+        /// Whether to follow links while traversing directories. If not set,
+        /// uses sane defaults.
+        #[arg(long)]
+        follow_links: Option<bool>,
+
+        /// The directory to be added to the `pack`.
+        input_directory_path: PathBuf,
+
+        /// Output `pack` path.
+        output_file_path: PathBuf,
+    },
+    /// Creates `pack` from options and list of files supplied through command
+    /// line.
+    FilesCmd {
+        #[command(flatten)]
+        file_global_options: FileGlobalOptions,
+
+        /// Output `pack` path.
+        output_file_path: PathBuf,
+
+        /// Base directory path, used to resolve relative for file inside
+        /// `pack`. All added files must be inside this directory.
+        input_base_directory_path: PathBuf,
+
+        /// List of files to be added to the `pack`.
+        input_file_paths: Vec<PathBuf>,
+    },
+    /// Creates `pack` from options supplied through command line and list of
+    /// files from stdin.
+    FilesStdin {
+        #[command(flatten)]
+        file_global_options: FileGlobalOptions,
+
+        /// Base directory path, used to resolve relative for file inside
+        /// `pack`. All added files must be inside this directory.
+        input_base_directory_path: PathBuf,
+
+        /// Output `pack` path.
+        output_file_path: PathBuf,
+    },
+}
 
 fn main() -> Result<(), Error> {
-    SimpleLogger::new()
-        .env()
-        .with_level(LevelFilter::Info)
-        .init()
-        .unwrap();
+    let arguments = Arguments::parse();
 
-    let matches = clap::builder::Command::new("web-static-pack packer")
-        .arg(
-            clap::builder::Arg::new("path")
-                .help("the directory to pack")
-                .required(true)
-                .value_parser(clap::builder::PathBufValueParser::new()),
-        )
-        .arg(
-            clap::builder::Arg::new("output_file")
-                .help("name of the build pack")
-                .required(true)
-                .value_parser(clap::builder::PathBufValueParser::new())
-                ,
-        )
-        .arg(
-            clap::builder::Arg::new("root_path")
-                .help("relative path to build pack paths with. use the same as `path` to have all paths in pack root")
-                .required(false)
-                .value_parser(clap::builder::PathBufValueParser::new())
-        )
-        .get_matches();
+    match arguments.command {
+        Command::DirectorySingle {
+            file_global_options,
+            follow_links,
+            input_directory_path,
+            output_file_path,
+        } => {
+            let mut directory_search_options = directory::SearchOptions::default();
+            if let Some(follow_links) = follow_links {
+                directory_search_options.follow_links = follow_links;
+            }
 
-    let path = matches.get_one::<PathBuf>("path").cloned().unwrap();
-    let output_file = matches.get_one::<PathBuf>("output_file").cloned().unwrap();
-    let root_path = matches
-        .get_one::<PathBuf>("root_path")
-        .cloned()
-        .unwrap_or_else(PathBuf::new);
+            let file_build_from_path_options =
+                file_global_options.into_file_build_from_path_options();
 
-    let mut pack = Pack::new();
-    pack.directory_add(&path, &root_path)
-        .context("directory_add")?;
-    pack.store(&output_file).context("store")?;
+            let mut pack_builder = pack::Builder::new();
+            for file_pack_path in directory::search(
+                &input_directory_path,
+                &directory_search_options,
+                &file_build_from_path_options,
+            )? {
+                // TODO: provide information which file produced error
+                pack_builder.file_pack_path_add(file_pack_path)?
+            }
+
+            let pack = pack_builder.finalize();
+            pack::store_file(&pack, &output_file_path)?;
+        }
+        Command::FilesCmd {
+            file_global_options,
+            output_file_path,
+            input_base_directory_path,
+            input_file_paths,
+        } => {
+            let file_build_from_path_options =
+                file_global_options.into_file_build_from_path_options();
+
+            let mut pack_builder = pack::Builder::new();
+            for input_file_path in input_file_paths {
+                // TODO: move this into try block with shared context
+                let input_file_error_context = || input_file_path.to_string_lossy().into_owned();
+
+                let file_pack_path = file_pack_path::FilePackPath::build_from_path(
+                    &input_file_path,
+                    &input_base_directory_path,
+                    &file_build_from_path_options,
+                )
+                .with_context(input_file_error_context)?;
+
+                pack_builder
+                    .file_pack_path_add(file_pack_path)
+                    .with_context(input_file_error_context)?;
+            }
+
+            let pack = pack_builder.finalize();
+            pack::store_file(&pack, &output_file_path)?;
+        }
+        Command::FilesStdin {
+            file_global_options,
+            input_base_directory_path,
+            output_file_path,
+        } => {
+            let file_build_from_path_options =
+                file_global_options.into_file_build_from_path_options();
+
+            let mut pack_builder = pack::Builder::new();
+            for input_file_path in stdin().lines() {
+                let input_file_path = PathBuf::from(input_file_path?);
+
+                // TODO: move this into try block with shared context
+                let input_file_error_context = || input_file_path.to_string_lossy().into_owned();
+
+                let file_pack_path = file_pack_path::FilePackPath::build_from_path(
+                    &input_file_path,
+                    &input_base_directory_path,
+                    &file_build_from_path_options,
+                )
+                .with_context(input_file_error_context)?;
+
+                pack_builder
+                    .file_pack_path_add(file_pack_path)
+                    .with_context(|| input_file_path.to_string_lossy().into_owned())?;
+            }
+
+            let pack = pack_builder.finalize();
+            pack::store_file(&pack, &output_file_path)?;
+        }
+    }
+
     Ok(())
 }
