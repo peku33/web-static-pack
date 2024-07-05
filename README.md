@@ -3,7 +3,7 @@ web-static-pack is a set of tools for embedding static resources (GUI, assets, i
 
 It consists of two parts:
 - [web-static-pack-packer](https://crates.io/crates/web-static-pack-packer) (aka "packer") - a standalone application (can be used as a library) used to serialize your assets into single file, called `pack`. It will usually be used before you build your target application (eg. in build script / CI / build.rs). During creation of a `pack` all heavy computations are done, eg. calculating `ETag`, compressed (`gzip`, `brotli`) versions, mime guessing etc. As a result a `pack` file is created, to be used by the next part.
-- [web-static-pack](https://github.com/peku33/web-static-pack) (aka "loader") - a library to include in your target application that will read the `pack` (preferably included in the application with <https://docs.rs/include_bytes_aligned/latest/include_bytes_aligned/>). Then `pack` can be used to form a `http` `service` (a function taking a request and returning response) serving files from the `pack`.
+- [web-static-pack](https://crates.io/crates/web-static-pack) (aka "loader") - a library to include in your target application that will read the `pack` (preferably included in the application with <https://docs.rs/include_bytes_aligned/latest/include_bytes_aligned/>). Then `pack` can be used to form a `http` `service` (a function taking a request and returning response) serving files from the `pack`.
 
 ## Features
 - Precomputed (in "packer") `ETag` (using `sha3`), compressed bodies (in `gzip` and `brotli` formats), `content-type`, etc. This reduces both runtime overhead and dependencies of your target application.
@@ -35,7 +35,7 @@ $ web-static-pack-packer \
 This will create a `./vcard-personal-portfolio.pack` file, containing all your files combined, ready to be included in your target application.
 
 ### Serving from your target application
-Refer to [web-static-pack](https://github.com/peku33/web-static-pack) for full example.
+Refer to [web-static-pack](https://crates.io/crates/web-static-pack) for full example.
 
 You will need to include the pack in your executable with <https://docs.rs/include_bytes_aligned/latest/include_bytes_aligned/>. Then pack needs to be loaded from this binary slice. At the end we construct a http service, that will serve our requests.
 
