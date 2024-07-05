@@ -1,88 +1,106 @@
-//! # web-static-pack
-//! Embed static resources (GUI, assets, images, styles, html) within executable.
-//! Serve with hyper or any server of your choice.
+//! web-static-pack is the "loader" (2nd stage) part of the
+//! [web-static-pack](https://github.com/peku33/web-static-pack)
+//! project. See project page for a general idea how two parts cooperate.
 //!
-//! [![docs.rs](https://docs.rs/web-static-pack/badge.svg)](https://docs.rs/web-static-pack)
-//!   
-//! ## Usage scenario:
-//! - Combines given directory tree into single, fast, binary-based single-file representation, called `pack`. Use simple CLI tool `web-static-pack-packer` to create a pack.
-//! - Pack could be embedded into your application using `include_bytes!` single macro.
-//! - Super-fast, zero-copy `loader` provides by-name access to files.
-//! - Easy-to-use `hyper_loader` allows super-quick integration with hyper-based server.
-//!   
-//! ## Features:
-//! - Super fast, low overhead
-//! - 100% 'static access, zero data copy
-//! - 100% pack-time calculated `Content-Type`, `ETag` (using sha3)
-//! - 100% pack-time calculated gzip-compressed files
-//! - Almost no external dependencies
+//! Once a `pack` is created with build script / CI / build.rs using
+//! [web-static-pack-packer](https://crates.io/crates/web-static-pack-packer)
+//! it will usually be included in your target application with
+//! <https://docs.rs/include_bytes_aligned/latest/include_bytes_aligned/>.
+//! Then it will be loaded with a [loader::load], utilizing zero-copy
+//! deserialization (so file contents will be sent from executable contents
+//! directly). The pack is then possibly wrapped with [responder::Responder]
+//! http service and used with a web server like hyper.
 //!
-//! ## Limitations:
-//! - By default all files with guesses text/ content type are treated as utf-8
-//! - Packs are not guaranteed to be portable across versions / architectures
-//!   
-//! ## Future goals:
-//! - You tell me
-//!   
-//! ## Non-Goals:
-//! - Directory listings
-//! - automatic index.html resolving
-//! - Uploads
-//!   
-//! ## Example:
-//! 1. Create a pack from `cargo doc`:
+//! The main part of this crate is [responder::Responder]. Its
+//! [responder::Responder::respond_flatten] method makes a [http] service - a
+//! function taking [http::Request] (actually the [http::request::Parts], as we
+//! don't need the body) and returning [http::Response].
+//!
+//! To make a [responder::Responder], a [common::pack::Pack] is needed. It can
+//! be obtained by [loader::load] function by passing (possibly included in
+//! binary) contents of a `pack` created with the packer.
+//!
+//! # Examples
+//!
+//! ## Creating and calling responder
+//! ```ignore
+//! use anyhow::Error;
+//! use include_bytes_aligned::include_bytes_aligned;
+//! use http::StatusCode;
+//! use web_static_pack::{loader::load, responder::Responder};
+//!
+//! // assume we have a vcard-personal-portfolio.pack available from packer examples
+//! static PACK_ARCHIVED_SERIALIZED: &[u8] =
+//!    include_bytes_aligned!(16, "vcard-personal-portfolio.pack");
+//!
+//! fn main() -> Result<(), Error> {
+//!     // load (map / cast) [common::pack::PackArchived] from included bytes
+//!     let pack_archived = unsafe { load(PACK_ARCHIVED_SERIALIZED).unwrap() };
+//!
+//!     // create a responder from `pack`
+//!     let responder = Responder::new(pack_archived);
+//!
+//!     // do some checks on the responder
+//!     assert_eq!(
+//!         responder.respond_flatten(<present file request>).status(),
+//!         StatusCode::OK
+//!     );
+//!
+//!     Ok(())
+//! }
 //! ```
-//! $ cargo doc --no-deps
-//! $ cargo run ./target/doc/ docs.pack
-//! ```
-//!   
-//! 2. Serve docs.pack from your web-application (see `examples/docs`)
-//! ```
-//! use anyhow::{Context, Error};
-//! use hyper::{
-//!     service::{make_service_fn, service_fn},
-//!     Body, Request, Response, Server,
+//!
+//! ## Adapting to hyper service
+//! This example is based on
+//! <https://hyper.rs/guides/1/server/graceful-shutdown/>
+//! which is a bit complicated.
+//!
+//! You can run full working example from
+//! `tests/examples/vcard_personal_portfolio_server.rs`
+//!
+//! ```ignore
+//! use anyhow::Error;
+//! use web_static_pack::responder::Responder;
+//! use std::{
+//!     convert::Infallible,
+//!     mem::transmute,
 //! };
-//! use lazy_static::lazy_static;
-//! use log::LevelFilter;
-//! use simple_logger::SimpleLogger;
-//! use std::{convert::Infallible, include_bytes, net::SocketAddr};
-//! use web_static_pack::{hyper_loader::Responder, loader::Loader};
 //!
-//! #[tokio::main]
-//! async fn main()  {
-//!     SimpleLogger::new()
-//!         .env()
-//!         .with_level(LevelFilter::Info)
-//!         .init()
-//!         .unwrap();
-//!     main_result().await.unwrap()
-//! }
+//! #[tokio::main(flavor = "current_thread")]
+//! async fn main() -> Result<(), Error> {
+//!     // lets assume we have a `responder: Responder` object available from previous example
+//!     // hyper requires service to be static
+//!     // we use graceful, no connections will outlive server function
+//!     let responder = unsafe {
+//!         transmute::<
+//!             &Responder<'_, _>,
+//!             &Responder<'static, _>,
+//!         >(&responder)
+//!     };
 //!
-//! async fn service(request: Request<Body>) -> Result<Response<Body>, Infallible> {
-//!     lazy_static! {
-//!         static ref PACK: &'static [u8] = include_bytes!("docs.pack");
-//!         static ref LOADER: Loader = Loader::new(&PACK).unwrap();
-//!         static ref RESPONDER: Responder<'static> = Responder::new(&LOADER);
-//!     }
+//!     // make hyper service
+//!     let service_fn = service_fn(|request: Request<Incoming>| async {
+//!         // you can probably filter your /api requests here
+//!         let (parts, _body) = request.into_parts();
+//!         let response = responder.respond_flatten(parts);
+//!         Ok::<_, Infallible>(response)
+//!     });
 //!
-//!     Ok(RESPONDER.request_respond(&request))
-//! }
-//!
-//! async fn main_result() -> Result<(), Error> {
-//!     let address = SocketAddr::from(([0, 0, 0, 0], 8080));
-//!     let server = Server::bind(&address).serve(make_service_fn(|_connection| async {
-//!         Ok::<_, Infallible>(service_fn(service))
-//!     }));
-//!
-//!     log::info!("Server listening on {:?}", address);
-//!     server.await.context("server")?;
-//!     
+//!     // use service_fn like in hyper example
 //!     Ok(())
 //! }
 //! ```
 
-pub mod loader;
+#![feature(let_chains)]
+#![allow(clippy::new_without_default)]
+#![warn(missing_docs)]
 
-#[cfg(feature = "hyper_loader")]
-pub mod hyper_loader;
+pub use web_static_pack_common as common;
+
+pub mod body;
+pub mod cache_control;
+pub mod content_encoding;
+pub mod file;
+pub mod loader;
+pub mod pack;
+pub mod responder;
