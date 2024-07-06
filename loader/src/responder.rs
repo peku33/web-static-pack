@@ -1,5 +1,5 @@
-//! Module containing [Responder] - service taking http requests and returning
-//! http responses.
+//! Module containing [Responder] - service taking http request (parts) and
+//! returning http responses.
 
 use crate::{
     body::Body,
@@ -9,9 +9,8 @@ use crate::{
 };
 use http::{
     header,
-    request::Parts as RequestParts,
     response::{Builder as ResponseBuilder, Response as HttpResponse},
-    Method, StatusCode,
+    HeaderMap, Method, StatusCode,
 };
 
 /// Http response type specialization.
@@ -35,16 +34,28 @@ pub type Response<'a> = HttpResponse<Body<'a>>;
 /// let responder = web_static_pack::responder::Responder::new(pack_archived);
 ///
 /// assert_eq!(
-///     responder.respond_flatten(<present file request>).status(),
+///     responder.respond_flatten(
+///         &Method::GET,
+///         "/present",
+///         &HeaderMap::default(),
+///     ).status(),
 ///     StatusCode::OK
 /// );
 /// assert_eq!(
-///     responder.respond_flatten(<missing file request>).status(),
+///     responder.respond_flatten(
+///         &Method::GET,
+///         "/missing",
+///         &HeaderMap::default(),
+///     ).status(),
 ///     StatusCode::NOT_FOUND
 /// );
 ///
 /// assert_eq!(
-///     responder.respond(<missing file request>),
+///     responder.respond(
+///         &Method::GET,
+///         "/missing",
+///         &HeaderMap::default(),
+///     ),
 ///     Err(ResponderRespondError::PackPathNotFound)
 /// );
 /// ```
@@ -67,8 +78,8 @@ where
         Self { pack }
     }
 
-    /// Returns http response for given request or rust error to be handled by
-    /// user.
+    /// Returns http response for given request parts or rust error to be
+    /// handled by user.
     ///
     /// Inside this method:
     /// - Checks http method (accepts GET or HEAD).
@@ -82,10 +93,12 @@ where
     /// [Self::respond_flatten].
     pub fn respond(
         &self,
-        request: RequestParts,
+        method: &Method,
+        path: &str,
+        headers: &HeaderMap,
     ) -> Result<Response<'p>, ResponderRespondError> {
         // only GET and HEAD are supported
-        let body_in_response = match request.method {
+        let body_in_response = match *method {
             Method::GET => true,
             Method::HEAD => false,
             _ => {
@@ -93,8 +106,8 @@ where
             }
         };
 
-        // find file for given request
-        let file = match self.pack.get_file_by_path(request.uri.path()) {
+        // find file for given path
+        let file = match self.pack.get_file_by_path(path) {
             Some(file_descriptor) => file_descriptor,
             None => {
                 return Err(ResponderRespondError::PackPathNotFound);
@@ -103,7 +116,7 @@ where
 
         // check for possible `ETag`
         // if `ETag` exists and matches current file, return 304
-        if let Some(etag_request) = request.headers.get(header::IF_NONE_MATCH)
+        if let Some(etag_request) = headers.get(header::IF_NONE_MATCH)
             && etag_request.as_bytes() == file.etag().as_bytes()
         {
             let response = ResponseBuilder::new()
@@ -116,7 +129,7 @@ where
 
         // resolve content and content-encoding header
         let content_content_encoding = ContentContentEncoding::resolve(
-            &match EncodingAccepted::from_headers(&request.headers) {
+            &match EncodingAccepted::from_headers(headers) {
                 Ok(content_encoding_encoding_accepted) => content_encoding_encoding_accepted,
                 Err(_) => return Err(ResponderRespondError::UnparsableAcceptEncoding),
             },
@@ -153,9 +166,11 @@ where
     /// For manual error handling, see [Self::respond].
     pub fn respond_flatten(
         &self,
-        request: RequestParts,
+        method: &Method,
+        path: &str,
+        headers: &HeaderMap,
     ) -> Response<'p> {
-        match self.respond(request) {
+        match self.respond(method, path, headers) {
             Ok(response) => response,
             Err(responder_error) => responder_error.into_response(),
         }
@@ -200,10 +215,7 @@ mod test_responder {
     use super::{Responder, ResponderRespondError};
     use crate::{cache_control::CacheControl, file::File, pack::Pack};
     use anyhow::anyhow;
-    use http::{
-        header, method::Method, request::Builder as RequestBuilder, status::StatusCode, HeaderMap,
-        HeaderName, HeaderValue,
-    };
+    use http::{header, method::Method, status::StatusCode, HeaderMap, HeaderName, HeaderValue};
 
     struct FileMock;
     impl File for FileMock {
@@ -259,16 +271,25 @@ mod test_responder {
 
     #[test]
     fn resolves_typical_request() {
-        let (request, _) = RequestBuilder::new()
-            .method(Method::GET)
-            .uri("/present")
-            .header(header::ACCEPT_ENCODING, "br, gzip")
-            .header(header::IF_NONE_MATCH, "\"invalidetag\"")
-            .body(())
-            .unwrap()
-            .into_parts();
+        let response = RESPONDER
+            .respond(
+                &Method::GET,
+                "/present",
+                &[
+                    (
+                        header::ACCEPT_ENCODING,
+                        HeaderValue::from_static("br, gzip"),
+                    ),
+                    (
+                        header::IF_NONE_MATCH,
+                        HeaderValue::from_static("\"invalidetag\""),
+                    ),
+                ]
+                .into_iter()
+                .collect::<HeaderMap>(),
+            )
+            .unwrap();
 
-        let response = RESPONDER.respond(request).unwrap();
         let headers = response.headers();
 
         assert_eq!(response.status(), StatusCode::OK);
@@ -299,14 +320,9 @@ mod test_responder {
 
     #[test]
     fn resolves_no_body_for_head_request() {
-        let (request, _) = RequestBuilder::new()
-            .method(Method::HEAD)
-            .uri("/present")
-            .body(())
-            .unwrap()
-            .into_parts();
-
-        let response = RESPONDER.respond(request).unwrap();
+        let response = RESPONDER
+            .respond(&Method::HEAD, "/present", &HeaderMap::default())
+            .unwrap();
         let headers = response.headers();
 
         assert_eq!(response.status(), StatusCode::OK);
@@ -333,15 +349,18 @@ mod test_responder {
 
     #[test]
     fn resolves_not_modified_for_matching_etag() {
-        let (request, _) = RequestBuilder::new()
-            .method(Method::GET)
-            .uri("/present")
-            .header(header::IF_NONE_MATCH, "\"etagvalue\"")
-            .body(())
-            .unwrap()
-            .into_parts();
-
-        let response = RESPONDER.respond(request).unwrap();
+        let response = RESPONDER
+            .respond(
+                &Method::GET,
+                "/present",
+                &[(
+                    header::IF_NONE_MATCH,
+                    HeaderValue::from_static("\"etagvalue\""),
+                )]
+                .into_iter()
+                .collect::<HeaderMap>(),
+            )
+            .unwrap();
         let headers = response.headers();
 
         assert_eq!(response.status(), StatusCode::NOT_MODIFIED);
@@ -359,14 +378,9 @@ mod test_responder {
 
     #[test]
     fn resolves_error_for_invalid_method() {
-        let (request, _) = RequestBuilder::new()
-            .method(Method::POST)
-            .uri("/present")
-            .body(())
-            .unwrap()
-            .into_parts();
-
-        let response_error = RESPONDER.respond(request).unwrap_err();
+        let response_error = RESPONDER
+            .respond(&Method::POST, "/present", &HeaderMap::default())
+            .unwrap_err();
         assert_eq!(
             response_error,
             ResponderRespondError::HttpMethodNotSupported
@@ -378,14 +392,9 @@ mod test_responder {
 
     #[test]
     fn resolves_error_for_file_not_found() {
-        let (request, _) = RequestBuilder::new()
-            .method(Method::GET)
-            .uri("/missing")
-            .body(())
-            .unwrap()
-            .into_parts();
-
-        let response_error = RESPONDER.respond(request).unwrap_err();
+        let response_error = RESPONDER
+            .respond(&Method::GET, "/missing", &HeaderMap::default())
+            .unwrap_err();
         assert_eq!(response_error, ResponderRespondError::PackPathNotFound);
 
         let response_flatten = response_error.into_response();

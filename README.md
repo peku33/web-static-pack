@@ -3,7 +3,7 @@ web-static-pack is a set of tools for embedding static resources (GUI, assets, i
 
 It consists of two parts:
 - [web-static-pack-packer](https://crates.io/crates/web-static-pack-packer) (aka "packer") - a standalone application (can be used as a library) used to serialize your assets into single file, called `pack`. It will usually be used before you build your target application (eg. in build script / CI / build.rs). During creation of a `pack` all heavy computations are done, eg. calculating `ETag`, compressed (`gzip`, `brotli`) versions, mime guessing etc. As a result a `pack` file is created, to be used by the next part.
-- [web-static-pack](https://crates.io/crates/web-static-pack) (aka "loader") - a library to include in your target application that will read the `pack` (preferably included in the application with <https://docs.rs/include_bytes_aligned/latest/include_bytes_aligned/>). Then `pack` can be used to form a `http` `service` (a function taking a request and returning response) serving files from the `pack`.
+- [web-static-pack](https://crates.io/crates/web-static-pack) (aka "loader") - a library to include in your target application that will read the `pack` (preferably included in the application with <https://docs.rs/include_bytes_aligned/latest/include_bytes_aligned/>). Then `pack` can be used to form a `http` `service` (a function taking a request (parts) and returning response) serving files from the `pack`.
 
 ## Features
 - Precomputed (in "packer") `ETag` (using `sha3`), compressed bodies (in `gzip` and `brotli` formats), `content-type`, etc. This reduces both runtime overhead and dependencies of your target application.
@@ -66,7 +66,13 @@ async fn main() -> Result<(), Error> {
     let service_fn = service_fn(|request: Request<Incoming>| async {
         // you can probably filter your /api requests here
         let (parts, _body) = request.into_parts();
-        let response = responder.respond_flatten(parts);
+        
+        let response = responder.respond_flatten(
+            &parts.method,
+            parts.uri.path(),
+            &parts.headers,
+        );
+        
         Ok::<_, Infallible>(response)
     });
     
@@ -89,7 +95,7 @@ The 0.5.0 is almost a complete rewrite, however the general idea remains the sam
 - Since we no longer depend on `hyper` in any way (the `http` crate is common interface), `hyper_loader` feature is no longer present in loader.
 - `let loader = loader::Loader::new(...)` is now `let pack_archived = loader::load(...)`. This value is still used for `Responder::new`.
 - `hyper_loader::Responder` is now just `responder::Responder`, and it's now built around `http` crate, compatible with `hyper` 1.0.
-- `Responder` was rewritten. It now accepts request parts (without body) not whole request. `request_respond_or_error` and `parts_respond_or_error` are now `respond`. `request_respond` and `parts_respond` are now `respond_flatten`.
+- `Responder` was rewritten. It now accepts (method, path, headers) not whole request. `request_respond_or_error` and `parts_respond_or_error` are squashed to `respond`. `request_respond` and `parts_respond` are squashed to `respond_flatten`.
 
 ### New features and improvements
 - True zero-copy deserialization with `rkyv`.

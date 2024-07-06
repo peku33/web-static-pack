@@ -6,7 +6,8 @@ use futures::{
     future::{select, Either},
     pin_mut,
 };
-use hyper::{body::Incoming, header, server::conn::http1, service::service_fn, Request};
+use http::{header, Request};
+use hyper::{body::Incoming, server::conn::http1, service::service_fn};
 use hyper_util::{rt::TokioIo, server::graceful::GracefulShutdown};
 use memmap2::Mmap;
 use ouroboros::self_referencing;
@@ -108,7 +109,7 @@ where
         let (parts, _body) = request.into_parts();
 
         log::info!("serving {}", parts.uri);
-        let response = responder.respond_flatten(parts);
+        let response = responder.respond_flatten(&parts.method, parts.uri.path(), &parts.headers);
 
         Ok::<_, Infallible>(response)
     });

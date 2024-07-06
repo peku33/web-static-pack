@@ -1950,7 +1950,7 @@ checksum = "af190c94f2773fdb3729c55b007a722abb5384da03bc0986df4c289bf5567e96"
 
 [[package]]
 name = "web-static-pack"
-version = "0.5.0-beta.1"
+version = "0.5.0-beta.2"
 dependencies = [
  "anyhow",
  "http",
@@ -1965,14 +1965,14 @@ dependencies = [
 
 [[package]]
 name = "web-static-pack-common"
-version = "0.5.0-beta.1"
+version = "0.5.0-beta.2"
 dependencies = [
  "rkyv",
 ]
 
 [[package]]
 name = "web-static-pack-packer"
-version = "0.5.0-beta.1"
+version = "0.5.0-beta.2"
 dependencies = [
  "anyhow",
  "brotli",
@@ -1989,7 +1989,7 @@ dependencies = [
 
 [[package]]
 name = "web-static-pack-tests"
-version = "0.5.0-beta.1"
+version = "0.5.0-beta.2"
 dependencies = [
  "anyhow",
  "futures",

@@ -15,8 +15,8 @@ http service and used with a web server like hyper.
 
 The main part of this crate is [responder::Responder]. Its
 [responder::Responder::respond_flatten] method makes a [http] service - a
-function taking [http::Request] (actually the [http::request::Parts], as we
-don't need the body) and returning [http::Response].
+function taking [http::Request] parts (method, path, headers) and returning
+[http::Response].
 
 To make a [responder::Responder], a [common::pack::Pack] is needed. It can
 be obtained by [loader::load] function by passing (possibly included in
@@ -28,7 +28,7 @@ binary) contents of a `pack` created with the packer.
 ```rust
 use anyhow::Error;
 use include_bytes_aligned::include_bytes_aligned;
-use http::StatusCode;
+use http::{HeaderMap, Method, StatusCode};
 use web_static_pack::{loader::load, responder::Responder};
 
 // assume we have a vcard-personal-portfolio.pack available from packer examples
@@ -44,7 +44,11 @@ fn main() -> Result<(), Error> {
 
     // do some checks on the responder
     assert_eq!(
-        responder.respond_flatten(<present file request>).status(),
+        responder.respond_flatten(
+            &Method::GET,
+            "/present",
+            &HeaderMap::default(),
+        ).status(),
         StatusCode::OK
     );
 
@@ -84,7 +88,13 @@ async fn main() -> Result<(), Error> {
     let service_fn = service_fn(|request: Request<Incoming>| async {
         // you can probably filter your /api requests here
         let (parts, _body) = request.into_parts();
-        let response = responder.respond_flatten(parts);
+
+        let response = responder.respond_flatten(
+            &parts.method,
+            parts.uri.path(),
+            &parts.headers
+        );
+
         Ok::<_, Infallible>(response)
     });
 

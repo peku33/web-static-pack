@@ -6,9 +6,9 @@ use crate::{
 };
 use http::HeaderValue;
 
-/// Trait for single file inside a `pack`. Consists of body in different encodings
-/// (`identity` aka `normal`, `gzip`, `brotli`), some precomputed header values
-/// etc.
+/// Trait for single file inside a `pack`. Consists of body in different
+/// encodings (`identity` aka `normal`, `gzip`, `brotli`), some precomputed
+/// header values etc.
 ///
 /// Most users will indirectly use [FileArchived] implementation, obtained from
 /// [crate::pack::Pack::get_file_by_path] (implemented by
