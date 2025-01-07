@@ -1,5 +1,3 @@
-#![feature(async_closure)]
-
 use anyhow::{anyhow, Error};
 use futures::{channel::oneshot, try_join, Future};
 use http::{header, HeaderMap, HeaderName, HeaderValue, StatusCode};
@@ -48,7 +46,7 @@ impl web_static_pack::pack::Pack for PackMock {
 }
 
 async fn run_with_server<F: Future<Output = Result<(), Error>>, E: FnOnce(Url) -> F>(
-    executor: E, // async fn executor(base_url: Url) -> Result<(), Error> { ... }
+    executor: E, // async fn executor(base_url) -> Result<(), Error> { ... }
 ) -> Result<(), Error> {
     let (bind_ready_sender, bind_ready_receiver) = oneshot::channel::<SocketAddr>();
     let (shutdown_sender, shutdown_receiver) = oneshot::channel::<()>();
@@ -84,7 +82,7 @@ fn header_as_string(
 
 #[tokio::test(flavor = "current_thread")]
 async fn responds_to_typical_request() {
-    run_with_server(async move |base_url: Url| {
+    run_with_server(async move |base_url| {
         let response = get(base_url.join("/present")?).await?.error_for_status()?;
         let headers = response.headers();
 
@@ -120,7 +118,7 @@ async fn responds_with_other_encodings(
     gzip: bool,
     expected: &[u8],
 ) {
-    run_with_server(async move |base_url: Url| {
+    run_with_server(async move |base_url| {
         let response = ClientBuilder::new()
             .brotli(brotli)
             .gzip(gzip)
@@ -142,7 +140,7 @@ async fn responds_with_other_encodings(
 
 #[tokio::test(flavor = "current_thread")]
 async fn resolves_no_body_for_head_request() {
-    run_with_server(async move |base_url: Url| {
+    run_with_server(async move |base_url| {
         let response = Client::new()
             .head(base_url.join("/present")?)
             .send()
@@ -176,7 +174,7 @@ async fn resolves_no_body_for_head_request() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn resolves_not_modified_for_matching_etag() {
-    run_with_server(async move |base_url: Url| {
+    run_with_server(async move |base_url| {
         let response = Client::new()
             .get(base_url.join("/present")?)
             .header(header::IF_NONE_MATCH, "\"etagvalue\"")
@@ -205,7 +203,7 @@ async fn resolves_not_modified_for_matching_etag() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn resolves_error_for_invalid_method() {
-    run_with_server(async move |base_url: Url| {
+    run_with_server(async move |base_url| {
         let response = Client::new()
             .post(base_url.join("/present")?)
             .send()
@@ -225,7 +223,7 @@ async fn resolves_error_for_invalid_method() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn resolves_error_for_file_not_found() {
-    run_with_server(async move |base_url: Url| {
+    run_with_server(async move |base_url| {
         let response = Client::new().get(base_url.join("/missing")?).send().await?;
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);

@@ -1,7 +1,5 @@
 //! Builds data/vcard-personal-portfolio.pack from data/vcard-personal-portfolio
 
-#![feature(async_closure)]
-
 use anyhow::Error;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;

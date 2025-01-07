@@ -17,8 +17,9 @@ use std::collections::HashMap;
 /// [web-static-pack](https://crates.io/crates/web-static-pack)
 /// crate.
 #[derive(Archive, Serialize, Debug)]
-#[archive(archived = "PackArchived")]
-#[archive_attr(derive(Debug))]
+#[rkyv(archived = PackArchived)]
+#[rkyv(derive(Debug))]
+#[rkyv(attr(allow(missing_docs)))] // TODO: resolve with https://github.com/rkyv/rkyv/issues/561
 pub struct Pack {
     /// List of contained files by their paths.
     pub files_by_path: HashMap<PackPath, File>,

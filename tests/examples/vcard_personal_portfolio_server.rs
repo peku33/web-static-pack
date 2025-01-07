@@ -2,8 +2,6 @@
 //! `data/vcard-personal-portfolio.pack`. Pack should be created upfront with
 //! builder example.
 
-#![feature(async_closure)]
-
 use anyhow::Error;
 use futures::{channel::oneshot, try_join};
 use include_bytes_aligned::include_bytes_aligned;
@@ -21,7 +19,7 @@ const BIND: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 3000);
 async fn main() -> Result<(), Error> {
     SimpleLogger::new().init().unwrap();
 
-    // load `pack` from prebuild version
+    // load `pack` from prebuilt version
     log::trace!("loading pack");
     let pack_archived = unsafe { web_static_pack::loader::load(PACK_ARCHIVED_SERIALIZED).unwrap() };
 

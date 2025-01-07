@@ -9,8 +9,8 @@ use std::{borrow::Borrow, ops::Deref};
 /// Custom type is used to enforce some rules, eg. starts with "/", contains
 /// only valid characters, etc.
 #[derive(Archive, Serialize, PartialEq, Eq, Hash, Debug)]
-#[archive(archived = "PackPathArchived")]
-#[archive_attr(derive(PartialEq, Eq, Hash, Debug))]
+#[rkyv(archived = PackPathArchived)]
+#[rkyv(derive(PartialEq, Eq, Hash, Debug))]
 pub struct PackPath {
     inner: String,
 }

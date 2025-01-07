@@ -1,12 +1,9 @@
 //! Module containing [load] function used to convert (map) serialized `pack`
 //! into [PackArchived] object.
 
-use crate::common::{
-    pack::{Pack, PackArchived},
-    PACK_FILE_MAGIC, PACK_FILE_VERSION,
-};
+use crate::common::{pack::PackArchived, PACK_FILE_MAGIC, PACK_FILE_VERSION};
 use anyhow::{ensure, Error};
-use rkyv::archived_root;
+use rkyv::access_unchecked;
 
 /// Alignment value for `serialized` in [load].
 pub const ALIGN_BYTES: usize = 16;
@@ -81,8 +78,8 @@ pub unsafe fn load(serialized: &[u8]) -> Result<&PackArchived, Error> {
     );
 
     // deserialize content
-    // NOTE: value passed to [archived_root] must be 16-aligned
-    let pack = unsafe { archived_root::<Pack>(&serialized[16..]) };
+    // NOTE: value passed to [access_unchecked] must be 16-aligned
+    let pack = unsafe { access_unchecked::<PackArchived>(&serialized[16..]) };
 
     Ok(pack)
 }

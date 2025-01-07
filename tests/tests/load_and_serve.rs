@@ -1,5 +1,3 @@
-#![feature(async_closure)]
-
 use futures::{channel::oneshot, try_join};
 use std::net::SocketAddr;
 use web_static_pack_tests::{

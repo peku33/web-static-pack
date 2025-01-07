@@ -11,8 +11,9 @@ use rkyv::{Archive, Serialize};
 /// without need to perform expensive computations (like calculating compressed
 /// forms) in runtime.
 #[derive(Archive, Serialize, Debug)]
-#[archive(archived = "FileArchived")]
-#[archive_attr(derive(Debug))]
+#[rkyv(archived = FileArchived)]
+#[rkyv(derive(Debug))]
+#[rkyv(attr(allow(missing_docs)))] // TODO: resolve with https://github.com/rkyv/rkyv/issues/561
 pub struct File {
     /// Raw (not compressed) file contents.
     pub content: Box<[u8]>,

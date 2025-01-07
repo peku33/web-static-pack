@@ -5,13 +5,7 @@ use crate::{
     file_pack_path::FilePackPath,
 };
 use anyhow::{bail, Error};
-use rkyv::{
-    ser::{
-        serializers::{AllocScratch, CompositeSerializer, WriteSerializer},
-        Serializer,
-    },
-    AlignedVec, Infallible,
-};
+use rkyv::{api::high::to_bytes_in, rancor, ser::writer::IoWriter, util::AlignedVec};
 use std::{
     collections::{hash_map, HashMap},
     fs, io,
@@ -77,13 +71,7 @@ fn store(
     // alignment unchanged, but adding anything here will break it.
     writer.write_all(&PACK_FILE_MAGIC.to_ne_bytes())?;
     writer.write_all(&PACK_FILE_VERSION.to_ne_bytes())?;
-
-    let mut inner_serializer = CompositeSerializer::new(
-        WriteSerializer::new(&mut writer),
-        AllocScratch::new(),
-        Infallible,
-    );
-    inner_serializer.serialize_value(pack)?;
+    to_bytes_in::<_, rancor::Error>(pack, IoWriter::new(writer))?;
 
     Ok(())
 }

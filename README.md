@@ -63,7 +63,7 @@ async fn main() -> Result<(), Error> {
     };
 
     // make hyper service function
-    let service_fn = service_fn(|request: Request<Incoming>| async {
+    let service_fn = service_fn(|request| async {
         // you can probably filter your /api requests here
         let (parts, _body) = request.into_parts();
         

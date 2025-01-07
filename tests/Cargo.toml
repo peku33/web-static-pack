@@ -1,6 +1,6 @@
 [package]
 name = "web-static-pack-tests"
-version = "0.5.0-beta.2"
+version = "0.5.0-beta.3"
 authors = ["Paweł Kubrak <peku33@gmail.com>"]
 edition = "2021"
 license = "MIT"
@@ -10,14 +10,14 @@ repository = "https://github.com/peku33/web-static-pack"
 publish = false
 
 [dependencies]
-web-static-pack-common = { version = "0.5.0-beta.2", path = "../common" }
-web-static-pack = { version = "0.5.0-beta.2", path = "../loader" }
-web-static-pack-packer = { version = "0.5.0-beta.2", path = "../packer" }
+web-static-pack-common = { version = "0.5.0-beta.3", path = "../common" }
+web-static-pack = { version = "0.5.0-beta.3", path = "../loader" }
+web-static-pack-packer = { version = "0.5.0-beta.3", path = "../packer" }
 
 anyhow = "1.0.86"
 futures = "0.3.30"
 http = "1.1.0"
-hyper = { version = "1.4.0", features = ["full"] }
+hyper = { version = "1.4.1", features = ["full"] }
 hyper-util = { version = "0.1.6", features = ["full"] }
 include_bytes_aligned = "0.1.3"
 log = "0.4.22"

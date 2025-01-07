@@ -253,11 +253,6 @@ fn content_type_from_path(path: &Path) -> String {
         .as_ref()
         .to_owned();
 
-    // NOTE: temporary workaround for https://github.com/abonander/mime_guess/issues/90
-    if content_type == "application/javascript" {
-        content_type = "text/javascript".to_owned();
-    }
-
     if content_type.starts_with("text/") {
         content_type.push_str("; charset=utf-8");
     }

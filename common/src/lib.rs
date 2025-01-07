@@ -31,4 +31,4 @@ pub mod pack_path;
 pub const PACK_FILE_MAGIC: u64 = 0x479a01809f24813c;
 /// File version, used by loader to detect if loader and packer versions are
 /// compatible.
-pub const PACK_FILE_VERSION: u64 = 1;
+pub const PACK_FILE_VERSION: u64 = 2;

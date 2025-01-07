@@ -6,8 +6,8 @@ use futures::{
     future::{select, Either},
     pin_mut,
 };
-use http::{header, Request};
-use hyper::{body::Incoming, server::conn::http1, service::service_fn};
+use http::header;
+use hyper::{server::conn::http1, service::service_fn};
 use hyper_util::{rt::TokioIo, server::graceful::GracefulShutdown};
 use memmap2::Mmap;
 use ouroboros::self_referencing;
@@ -105,7 +105,7 @@ where
     };
 
     // make hyper service
-    let service_fn = service_fn(|request: Request<Incoming>| async {
+    let service_fn = service_fn(|request| async {
         let (parts, _body) = request.into_parts();
 
         log::info!("serving {}", parts.uri);
