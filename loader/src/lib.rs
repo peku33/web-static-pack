@@ -103,6 +103,7 @@
 
 #![feature(let_chains)]
 #![allow(clippy::new_without_default)]
+#![allow(clippy::let_and_return)]
 #![warn(missing_docs)]
 
 pub use web_static_pack_common as common;
