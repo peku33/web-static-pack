@@ -8,9 +8,8 @@ use crate::{
     pack::Pack,
 };
 use http::{
-    header,
+    HeaderMap, Method, StatusCode, header,
     response::{Builder as ResponseBuilder, Response as HttpResponse},
-    HeaderMap, Method, StatusCode,
 };
 
 /// Http response type specialization.
@@ -215,7 +214,7 @@ mod test_responder {
     use super::{Responder, ResponderRespondError};
     use crate::{cache_control::CacheControl, file::File, pack::Pack};
     use anyhow::anyhow;
-    use http::{header, method::Method, status::StatusCode, HeaderMap, HeaderName, HeaderValue};
+    use http::{HeaderMap, HeaderName, HeaderValue, header, method::Method, status::StatusCode};
 
     struct FileMock;
     impl File for FileMock {

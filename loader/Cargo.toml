@@ -1,8 +1,9 @@
 [package]
 name = "web-static-pack"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Paweł Kubrak <peku33@gmail.com>"]
 edition = "2024"
+rust-version = "1.88"
 license = "MIT"
 description = "Embed static resources (GUI, assets, images, styles, html) within executable. Serve with hyper or any server of your choice."
 homepage = "https://github.com/peku33/web-static-pack"

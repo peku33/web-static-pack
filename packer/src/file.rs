@@ -4,7 +4,7 @@
 use crate::common::{cache_control::CacheControl, file::File};
 use anyhow::Error;
 use brotli::enc::BrotliEncoderParams;
-use flate2::{write::GzEncoder, Compression};
+use flate2::{Compression, write::GzEncoder};
 use sha3::{Digest, Sha3_256};
 use std::{
     fs,
@@ -270,8 +270,8 @@ fn etag_from_content(content: &[u8]) -> String {
 #[cfg(test)]
 mod test {
     use super::{
-        build_from_content, content_brotli_from_content, content_gzip_from_content,
-        content_type_from_path, etag_from_content, BuildFromContentOptions,
+        BuildFromContentOptions, build_from_content, content_brotli_from_content,
+        content_gzip_from_content, content_type_from_path, etag_from_content,
     };
     use crate::common::file::File;
     use std::path::{Path, PathBuf};

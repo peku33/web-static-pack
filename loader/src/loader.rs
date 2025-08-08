@@ -1,8 +1,8 @@
 //! Module containing [load] function used to convert (map) serialized `pack`
 //! into [PackArchived] object.
 
-use crate::common::{pack::PackArchived, PACK_FILE_MAGIC, PACK_FILE_VERSION};
-use anyhow::{ensure, Error};
+use crate::common::{PACK_FILE_MAGIC, PACK_FILE_VERSION, pack::PackArchived};
+use anyhow::{Error, ensure};
 use rkyv::access_unchecked;
 
 /// Alignment value for `serialized` in [load].
@@ -56,7 +56,7 @@ pub const ALIGN_BYTES: usize = 16;
 /// content is provided it is going to cause undefined behavior.
 pub unsafe fn load(serialized: &[u8]) -> Result<&PackArchived, Error> {
     ensure!(
-        serialized.as_ptr() as usize % ALIGN_BYTES == 0,
+        (serialized.as_ptr() as usize).is_multiple_of(ALIGN_BYTES),
         "invalid alignment, serialized must be aligned to {ALIGN_BYTES} bytes"
     );
     ensure!(serialized.len() > 16, "premature file end");

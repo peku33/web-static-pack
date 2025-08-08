@@ -1,13 +1,13 @@
 //! Pack helpers. Contains [Builder], builder for [Pack].
 
 use crate::{
-    common::{file::File, pack::Pack, pack_path::PackPath, PACK_FILE_MAGIC, PACK_FILE_VERSION},
+    common::{PACK_FILE_MAGIC, PACK_FILE_VERSION, file::File, pack::Pack, pack_path::PackPath},
     file_pack_path::FilePackPath,
 };
-use anyhow::{bail, Error};
+use anyhow::{Error, bail};
 use rkyv::{api::high::to_bytes_in, rancor, ser::writer::IoWriter, util::AlignedVec};
 use std::{
-    collections::{hash_map, HashMap},
+    collections::{HashMap, hash_map},
     fs, io,
     path::Path,
 };

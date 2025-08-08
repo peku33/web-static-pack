@@ -1,7 +1,7 @@
-use anyhow::{anyhow, Error};
-use futures::{channel::oneshot, try_join, Future};
-use http::{header, HeaderMap, HeaderName, HeaderValue, StatusCode};
-use reqwest::{get, Client, ClientBuilder, Url};
+use anyhow::{Error, anyhow};
+use futures::{Future, channel::oneshot, try_join};
+use http::{HeaderMap, HeaderName, HeaderValue, StatusCode, header};
+use reqwest::{Client, ClientBuilder, Url, get};
 use std::net::SocketAddr;
 use test_case::test_case;
 use web_static_pack_tests::serve_pack;

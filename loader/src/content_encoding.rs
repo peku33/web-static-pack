@@ -1,8 +1,8 @@
 //! Content encoding negotiation and content resolver types.
 
 use crate::file::File;
-use anyhow::{bail, Error};
-use http::{header, HeaderMap, HeaderValue};
+use anyhow::{Error, bail};
+use http::{HeaderMap, HeaderValue, header};
 use std::cell::Cell;
 
 /// Describes accepted content encodings.

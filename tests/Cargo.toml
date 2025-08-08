@@ -1,8 +1,9 @@
 [package]
 name = "web-static-pack-tests"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Paweł Kubrak <peku33@gmail.com>"]
 edition = "2024"
+rust-version = "1.88"
 license = "MIT"
 description = "Integration tests & data for web-static-pack crate."
 homepage = "https://github.com/peku33/web-static-pack"

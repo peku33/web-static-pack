@@ -1,9 +1,9 @@
 #![doc(hidden)]
 
-use anyhow::{anyhow, ensure, Context, Error};
+use anyhow::{Context, Error, anyhow, ensure};
 use futures::{
     channel::oneshot,
-    future::{select, Either},
+    future::{Either, select},
     pin_mut,
 };
 use http::header;

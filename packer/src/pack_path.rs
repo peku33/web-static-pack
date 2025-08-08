@@ -2,7 +2,7 @@
 //! paths from fs paths.
 
 use crate::common::pack_path::PackPath;
-use anyhow::{anyhow, ensure, Error};
+use anyhow::{Error, anyhow, ensure};
 use std::{
     iter,
     path::{Component, Path},
