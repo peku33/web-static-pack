@@ -58,10 +58,13 @@ impl EncodingAccepted {
         let mut gzip = false;
         let mut brotli = false;
 
-        for accept_encoding in accept_encoding.split(", ") {
-            let accept_encoding = Self::extract_algorithm_from_value(accept_encoding);
-
-            match accept_encoding {
+        // Some servers use `,` as separator, some use `, `, some use both. So we split
+        // by `,` and trim each value.
+        accept_encoding
+            .split(",")
+            .map(|accept_encoding| accept_encoding.trim())
+            .map(Self::extract_algorithm_from_value)
+            .for_each(|accept_encoding| match accept_encoding {
                 "gzip" => {
                     gzip = true;
                 }
@@ -69,8 +72,7 @@ impl EncodingAccepted {
                     brotli = true;
                 }
                 _ => {}
-            }
-        }
+            });
 
         Self { gzip, brotli }
     }
@@ -128,6 +130,7 @@ mod test_encoding_accepted {
     #[test_case("gzip", EncodingAccepted { gzip: true, brotli: false })]
     #[test_case("br", EncodingAccepted { gzip: false, brotli: true })]
     #[test_case("deflate, gzip;q=1.0", EncodingAccepted { gzip: true, brotli: false })]
+    #[test_case("br,gzip", EncodingAccepted { gzip: true, brotli: true })]
     fn from_accept_encoding_header_str_returns_expected(
         accept_encoding: &str,
         expected: EncodingAccepted,
