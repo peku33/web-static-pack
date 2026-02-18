@@ -1,6 +1,6 @@
 [package]
 name = "web-static-pack-common"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["Paweł Kubrak <peku33@gmail.com>"]
 edition = "2024"
 rust-version = "1.88"

@@ -1,6 +1,6 @@
 [package]
 name = "web-static-pack-tests"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["Paweł Kubrak <peku33@gmail.com>"]
 edition = "2024"
 rust-version = "1.88"
@@ -11,20 +11,20 @@ repository = "https://github.com/peku33/web-static-pack"
 publish = false
 
 [dependencies]
-web-static-pack-common = { version = "0.5.0", path = "../common" }
-web-static-pack = { version = "0.5.0", path = "../loader" }
-web-static-pack-packer = { version = "0.5.0", path = "../packer" }
+web-static-pack-common = { version = "0.5.2", path = "../common" }
+web-static-pack = { version = "0.5.2", path = "../loader" }
+web-static-pack-packer = { version = "0.5.2", path = "../packer" }
 
 anyhow = "1.0.86"
 futures = "0.3.30"
 http = "1.1.0"
 hyper = { version = "1.4.1", features = ["full"] }
 hyper-util = { version = "0.1.6", features = ["full"] }
-include_bytes_aligned = "0.1.3"
+include_bytes_aligned = "0.2.0"
 log = "0.4.22"
 memmap2 = "0.9.4"
 ouroboros = "0.18.4"
-reqwest = { version = "0.12.5", features = ["gzip", "brotli"] }
+reqwest = { version = "0.13.2", features = ["gzip", "brotli"] }
 simple_logger = "5.0.0"
 test-case = "3.3.1"
 tokio = { version = "1.38.0", features = ["full"] }
