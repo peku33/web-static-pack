@@ -134,9 +134,6 @@
 //!
 //! For more examples browse through modules of this crate.
 
-#![allow(clippy::new_without_default)]
-#![warn(missing_docs)]
-
 pub use web_static_pack_common as common;
 
 pub mod directory;

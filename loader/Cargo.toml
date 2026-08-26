@@ -1,33 +1,29 @@
 [package]
 name = "web-static-pack"
-version = "0.5.2"
-authors = ["Paweł Kubrak <peku33@gmail.com>"]
-edition = "2024"
-rust-version = "1.88"
-license = "MIT"
 description = "Embed static resources (GUI, assets, images, styles, html) within executable. Serve with hyper or any server of your choice."
-homepage = "https://github.com/peku33/web-static-pack"
-repository = "https://github.com/peku33/web-static-pack"
 readme = "README.md"
-keywords = ["web", "http", "static", "resources", "hyper"]
-categories = ["web-programming"]
+
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
-web-static-pack-common = { version = "0.5.2", path = "../common" }
+web-static-pack-common.workspace = true
 
-anyhow = "1.0.86"
-http = "1.1.0"
-http-body = "1.0.1"
-rkyv = { version = "0.8.9", default-features = false, features = [
-    "std",
-    "alloc",
-    "little_endian",
-    "aligned",
-    "pointer_width_32",
-] }
+anyhow.workspace = true
+http.workspace = true
+http-body.workspace = true
+rkyv.workspace = true
 
 [dev-dependencies]
 http-body-util = "0.1.2"
-hyper = { version = "1.4.1", features = ["full"] }
 test-case = "3.3.1"
-tokio = { version = "1.38.0", features = ["full"] }
+
+[lints]
+workspace = true

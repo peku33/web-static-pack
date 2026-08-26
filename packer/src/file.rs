@@ -3,6 +3,7 @@
 
 use crate::common::{cache_control::CacheControl, file::File};
 use anyhow::Error;
+use base16ct::HexDisplay;
 use brotli::enc::BrotliEncoderParams;
 use flate2::{Compression, write::GzEncoder};
 use sha3::{Digest, Sha3_256};
@@ -263,7 +264,7 @@ fn etag_from_content(content: &[u8]) -> String {
     let mut etag = Sha3_256::new();
     etag.update(content);
     let etag = etag.finalize();
-    let etag = format!("\"{:x}\"", &etag); // `ETag` as "quoted" hex sha3. Quote is required by standard
+    let etag = format!("\"{:x}\"", HexDisplay(etag.as_slice())); // `ETag` as "quoted" hex sha3. Quote is required by standard
     etag
 }
 

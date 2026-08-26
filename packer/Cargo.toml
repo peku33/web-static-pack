@@ -1,35 +1,35 @@
 [package]
 name = "web-static-pack-packer"
-version = "0.5.2"
-authors = ["Paweł Kubrak <peku33@gmail.com>"]
-edition = "2024"
-rust-version = "1.88"
-license = "MIT"
 description = "Installable web-static-pack-packer tool for web-static-pack crate"
-homepage = "https://github.com/peku33/web-static-pack"
-repository = "https://github.com/peku33/web-static-pack"
 readme = "README.md"
-keywords = ["web", "http", "static", "resources", "hyper"]
-categories = ["web-programming"]
+
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
-web-static-pack-common = { version = "0.5.2", path = "../common" }
+web-static-pack-common.workspace = true
 
-anyhow = "1.0.86"
+anyhow.workspace = true
+rkyv.workspace = true
+
+base16ct = "1.0.0"
 brotli = "8.0.1"
 clap = { version = "4.5.9", features = ["derive"] }
 flate2 = "1.0"
-itertools = "0.14.0"
+itertools = "0.15.0"
 mime_guess = "2.0.5"
-rkyv = { version = "0.8.9", default-features = false, features = [
-    "std",
-    "alloc",
-    "little_endian",
-    "aligned",
-    "pointer_width_32",
-] }
-sha3 = "0.10.8"
+sha3 = "0.12.0"
 walkdir = "2.5.0"
 
 [dev-dependencies]
 test-case = "3.3.1"
+
+[lints]
+workspace = true

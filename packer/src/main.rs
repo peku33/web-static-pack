@@ -1,8 +1,6 @@
 //! Main packer executable, to be used as cli tool. For help run this command
 //! with `-h`.
 
-#![warn(missing_docs)]
-
 use anyhow::{Context, Error};
 use clap::{Args, Parser, Subcommand};
 use std::{io::stdin, path::PathBuf};

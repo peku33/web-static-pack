@@ -20,8 +20,6 @@
 //! needed internally by [rkyv], but are not used directly in this project. They
 //! should be hidden from docs.
 
-#![warn(missing_docs)]
-
 pub mod cache_control;
 pub mod file;
 pub mod pack;

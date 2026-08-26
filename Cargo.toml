@@ -1,3 +1,37 @@
 [workspace]
 members = ["common", "loader", "packer", "tests"]
-resolver = "2"
+resolver = "3"
+
+[workspace.package]
+version = "0.5.3"
+authors = ["Paweł Kubrak <peku33@gmail.com>"]
+edition = "2024"
+rust-version = "1.88"
+license = "MIT"
+homepage = "https://github.com/peku33/web-static-pack"
+repository = "https://github.com/peku33/web-static-pack"
+keywords = ["web", "http", "static", "resources", "hyper"]
+categories = ["web-programming"]
+
+[workspace.dependencies]
+web-static-pack-common = { path = "common", version = "0.5.3" }
+web-static-pack = { path = "loader", version = "0.5.3" }
+web-static-pack-packer = { path = "packer", version = "0.5.3" }
+
+anyhow = "1.0.86"
+http = "1.1.0"
+http-body = "1.0.1"
+rkyv = { version = "0.8.9", default-features = false, features = [
+    "std",
+    "alloc",
+    "little_endian",
+    "aligned",
+    "pointer_width_32",
+] }
+
+[workspace.lints.rust]
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+new_without_default = "allow"
+let_and_return = "allow"

@@ -1,23 +1,25 @@
 [package]
 name = "web-static-pack-tests"
-version = "0.5.2"
-authors = ["Paweł Kubrak <peku33@gmail.com>"]
-edition = "2024"
-rust-version = "1.88"
-license = "MIT"
 description = "Integration tests & data for web-static-pack crate."
-homepage = "https://github.com/peku33/web-static-pack"
-repository = "https://github.com/peku33/web-static-pack"
 publish = false
 
-[dependencies]
-web-static-pack-common = { version = "0.5.2", path = "../common" }
-web-static-pack = { version = "0.5.2", path = "../loader" }
-web-static-pack-packer = { version = "0.5.2", path = "../packer" }
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
-anyhow = "1.0.86"
+[dependencies]
+web-static-pack-common.workspace = true
+web-static-pack.workspace = true
+web-static-pack-packer.workspace = true
+
+anyhow.workspace = true
+http.workspace = true
+
 futures = "0.3.30"
-http = "1.1.0"
 hyper = { version = "1.4.1", features = ["full"] }
 hyper-util = { version = "0.1.6", features = ["full"] }
 include_bytes_aligned = "0.2.0"
@@ -28,3 +30,6 @@ reqwest = { version = "0.13.2", features = ["gzip", "brotli"] }
 simple_logger = "5.0.0"
 test-case = "3.3.1"
 tokio = { version = "1.38.0", features = ["full"] }
+
+[lints]
+workspace = true
